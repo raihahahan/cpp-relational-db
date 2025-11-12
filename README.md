@@ -37,7 +37,7 @@ Below is a simplified high-level view of the entire system stack:
 - **C++20 or later** (tested with GCC 12+ / Clang 15+)
 - **CMake 3.14+**
 - **GoogleTest** (fetched automatically via CMake)
-- Optional: **Make** for simplified build commands
+- **Make** for simplified build commands
 
 ## Build & Test
 
@@ -66,7 +66,7 @@ mkdir build && cd build
 cmake -DCMAKE_BUILD_TYPE=Debug ..
 make -j
 ctest --output-on-failure
-``-
+```
 
 ## Repository Structure
 
@@ -130,8 +130,6 @@ For detailed documentation, see the [storage/README.md](src/storage/README.md).
 | 4     | **Recovery**                | Implement write-ahead logging and crash recovery.                 | Planned     |
 | 5     | **Networking & SQL Parser** | Add a client-server interface and query parsing layer.            | Planned     |
 
-
 ## License
 
 This project is released under the [MIT License](LICENSE).
-```
