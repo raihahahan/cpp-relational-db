@@ -15,16 +15,12 @@ This repository implements a mini relational database system in modern C++. It i
 
 This database system is built as a layered architecture, where each layer abstracts a specific level of data management:
 
-```
-Query Layer: Parses, optimizes, and executes SQL statements.
-Execution Layer: Handles query operators (scan, join, aggregate).
-Buffer Manager: Caches and manages in-memory pages.
-Storage Layer: Reads/writes pages to disk (raw I/O).
-```
+1. Query Layer: Parses, optimizes, and executes SQL statements.
+2. Execution Layer: Handles query operators (scan, join, aggregate).
+3. Buffer Manager: Caches and manages in-memory pages.
+4. Storage Layer: Reads/writes pages to disk (raw I/O).
 
 Each layer interacts only with the one directly below it, following clean modular boundaries.
-
-## Architecture
 
 Below is a simplified high-level view of the entire system stack:
 
