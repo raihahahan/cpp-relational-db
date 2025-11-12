@@ -39,3 +39,9 @@
 
 # debug information files
 *.dwo
+
+build/
+settings.json
+
+# database specific
+*.db
