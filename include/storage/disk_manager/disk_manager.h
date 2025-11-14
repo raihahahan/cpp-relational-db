@@ -4,9 +4,10 @@
 #include <fstream>
 #include <string>
 #include <vector> 
-using page_id_t = int32_t;;
 
 namespace db::storage {
+using page_id_t = int32_t;
+
 class DiskManager {
 public:
     explicit DiskManager(const std::string &db_file);
