@@ -1,6 +1,6 @@
 # C++ Relational Database
 
-This repository implements a mini relational database system in modern C++. It is inspired by the PostgreSQL and upon taking [CS3223 (Database Implementations)](https://nusmods.com/courses/CS3223/database-systems-implementation)
+This repository implements a mini relational database system in modern C++. It is inspired by PostgreSQL and upon taking [CS3223 (Database Implementations)](https://nusmods.com/courses/CS3223/database-systems-implementation)
 
 ## Table of Contents
 
