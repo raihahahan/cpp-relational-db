@@ -6,6 +6,7 @@
 #include <vector> 
 using page_id_t = int32_t;;
 
+namespace db::storage {
 class DiskManager {
 public:
     explicit DiskManager(const std::string &db_file);
@@ -28,3 +29,4 @@ private:
     std::vector<page_id_t> free_list;
     page_id_t next_page_id_;
 };
+}

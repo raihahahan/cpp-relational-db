@@ -21,7 +21,7 @@ enable_testing()
 
 # source files
 add_library(storage
-    src/storage/disk_manager.cpp
+    src/storage/disk_manager/disk_manager.cpp
 )
 target_include_directories(storage PUBLIC src)
 
@@ -29,7 +29,7 @@ target_include_directories(storage PUBLIC src)
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
 # tests
-add_executable(test_disk_manager tests/storage/test_disk_manager.cpp)
+add_executable(test_disk_manager tests/storage/disk_manager/test_disk_manager.cpp)
 target_link_libraries(test_disk_manager
     PRIVATE
         storage

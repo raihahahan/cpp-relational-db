@@ -1,6 +1,8 @@
 #include "storage/disk_manager.h"
 #include "config/config.h"
 
+using DiskManager = db::storage::DiskManager;
+
 DiskManager::DiskManager(const std::string &db_file) {
     db_io_ = std::fstream(db_file, std::ios::in | std::ios::out | std::ios::binary);
     if (!db_io_.is_open()) {

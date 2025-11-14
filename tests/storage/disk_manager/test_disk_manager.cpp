@@ -5,6 +5,8 @@
 
 #define TEST_FILE "file.db"
 
+using DiskManager = db::storage::DiskManager;
+
 class DiskManagerTest : public testing::Test {
 protected:
 
