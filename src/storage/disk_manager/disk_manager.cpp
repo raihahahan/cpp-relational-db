@@ -1,8 +1,7 @@
-#include "storage/disk_manager.h"
+#include "storage/disk_manager/disk_manager.h"
 #include "config/config.h"
 
-using DiskManager = db::storage::DiskManager;
-
+namespace db::storage {
 DiskManager::DiskManager(const std::string &db_file) {
     db_io_ = std::fstream(db_file, std::ios::in | std::ios::out | std::ios::binary);
     if (!db_io_.is_open()) {
@@ -32,7 +31,7 @@ void DiskManager::WritePage(page_id_t page_id, const char* page_data) {
     db_io_.flush();
 }
 
-page_id_t DiskManager::AllocatePage() {
+db::storage::page_id_t DiskManager::AllocatePage() {
     if (!free_list.empty()) {
         // free list available
         // use a current free frame instead of adding to free list
@@ -53,4 +52,5 @@ void DiskManager::DeallocatePage(page_id_t page_id) {
 int DiskManager::GetNumPages() const {
     db_io_.seekg(0, std::ios::end);
     return db_io_.tellg() / Config::PAGE_SIZE;
+}
 }

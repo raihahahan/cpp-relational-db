@@ -1,12 +1,11 @@
-#include "storage/disk_manager.h"
+#include "storage/disk_manager/disk_manager.h"
 #include <gtest/gtest.h>
 #include <filesystem>
 #include "config/config.h"
 
 #define TEST_FILE "file.db"
 
-using DiskManager = db::storage::DiskManager;
-
+namespace db::storage {
 class DiskManagerTest : public testing::Test {
 protected:
 
@@ -58,4 +57,5 @@ TEST_F(DiskManagerTest, DeallocatePageTest) {
     // allocate again. should use freed page id 0
     page_id_t id = dm->AllocatePage();
     EXPECT_EQ(id, 0);
+}
 }
