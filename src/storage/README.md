@@ -6,12 +6,6 @@ The `/storage` folder contains the following layers:
 
 ```
 +-----------------------------+
-|        File Layer           |
-|   (Heap files, indexes)     |
-+-------------+---------------+
-              |
-              v
-+-----------------------------+
 |       Buffer Manager        | in-memory page cache (Clock replacement)
 |    - pin/unpin pages        |
 |    - manage dirty pages     |
@@ -37,11 +31,10 @@ Each layer builds on the one below it.
 
 ## 1. Architecture Overview
 
-| Layer                      | Description                       | Responsibility                                                 |
-| -------------------------- | --------------------------------- | -------------------------------------------------------------- |
-| **DiskManager**            | Lowest-level storage abstraction. | Reads and writes fixed-size pages to disk files.               |
-| **BufferManager**          | Caches pages in main memory.      | Manages pinned pages, dirty flags, and eviction.               |
-| **FilesLayer (Heap File)** | Logical record storage layer.     | Organizes tuples inside pages using RIDs and slot directories. |
+| Layer             | Description                       | Responsibility                                   |
+| ----------------- | --------------------------------- | ------------------------------------------------ |
+| **DiskManager**   | Lowest-level storage abstraction. | Reads and writes fixed-size pages to disk files. |
+| **BufferManager** | Caches pages in main memory.      | Manages pinned pages, dirty flags, and eviction. |
 
 Each page is fixed-size (4 KB), representing a block of the database file on disk.
 
@@ -113,26 +106,85 @@ make test_disk_manager
 make clean
 ```
 
-## 3. BufferManager (TODO)
+## 3. BufferManager
 
-The BufferManager sits above the DiskManager. It maintains an in-memory cache of database pages to minimize disk I/O.
-
-### Responsibilities
-
-- Maintain a fixed number of in-memory **frames**, each storing a page.
-- Keep a page table mapping `page_id -> frame index`.
-- Manage pin counts and dirty flags for pages.
-- Implement a replacement policy (Clock).
-- Interface with `DiskManager` for page reads/writes.
-
-## 4. FilesLayer (TODO)
-
-The FilesLayer manages logical records inside physical pages. It builds on top of the BufferManager and implements tuple-level operations.
+The BufferManager sits above the DiskManager and maintains an in-memory cache of database pages (frames) to reduce direct disk I/O. It exposes a minimal API for fetching, releasing, marking, and flushing pages. Higher layers such as the file access (heap/index) and catalog systems interact with pages only through this interface.
 
 ### Responsibilities
 
-- Manage heap pages that store multiple tuples.
-- Use line pointers (slot directory) to locate records within a page.
-- Provide operations for inserting, reading, updating, and deleting tuples.
-- Use Record IDs (RIDs) composed of `(page_id, slot_id)` to locate tuples.
-- Work through BufferManager for all page access.
+- Cache a fixed number of pages in memory (`pool_`).
+- Maintain a **page table** mapping `page_id => Frame*` for fast lookup.
+- Manage **pin/unpin counts** to track page usage.
+- Mark pages as **dirty** when modified, ensuring they are flushed before eviction.
+- Manage a **free list** for unused frames and a **replacement policy** (Clock).
+- Coordinate all physical reads/writes via `IDiskManager`.
+
+### Public Interface
+
+| Method                   | Description                                                                                                                                                                                                                                        |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`request(page_id)`**   | Fetches the page with the given `page_id`. If the page is already cached, returns its frame and increments its pin count. If not, evicts a victim (if needed), reads the page from disk into a free frame, pins it, and returns the frame pointer. |
+| **`release(page_id)`**   | Unpins the page, decreasing its pin count. When the pin count reaches zero, the page becomes eligible for eviction.                                                                                                                                |
+| **`mark_dirty(Frame*)`** | Marks a frame as dirty, indicating it must be written back to disk before eviction.                                                                                                                                                                |
+| **`flush_all()`**        | Writes all dirty frames currently in the buffer pool back to disk.                                                                                                                                                                                 |
+
+### Internal Components
+
+| Member            | Purpose                                                                                                 |
+| ----------------- | ------------------------------------------------------------------------------------------------------- |
+| **`page_table_`** | Maps `page_id` to in-memory `Frame*` for O(1) lookups.                                                  |
+| **`pool_`**       | Vector of preallocated frames representing the in-memory page pool.                                     |
+| **`frame_ptrs_`** | Collection of raw pointers to frames, passed to the replacement policy for tracking.                    |
+| **`free_list_`**  | Holds unallocated frames available for immediate use.                                                   |
+| **`policy_`**     | Clock replacement policy implementing `IReplacementPolicy`. Responsible for selecting eviction victims. |
+| **`disk_`**       | Pointer to the underlying `IDiskManager`, used for all disk reads/writes.                               |
+
+### Private Helpers
+
+| Method                            | Description                                                                                     |
+| --------------------------------- | ----------------------------------------------------------------------------------------------- |
+| **`evict()`**                     | Chooses a victim frame to evict using the replacement policy. Flushes it if dirty before reuse. |
+| **`read(page_id, frame)`**        | Reads the specified page from disk into the given frame’s memory buffer.                        |
+| **`flush(frame)`**                | Writes a dirty frame’s contents back to disk via `IDiskManager`.                                |
+| **`pin(frame)` / `unpin(frame)`** | Increments or decrements a frame’s pin count. Pinned frames cannot be evicted.                  |
+
+### Typical Workflow
+
+```
+
+User → request(page_id)
+↓
+If cached → return Frame* and pin
+Else:
+• Get frame from FreeList or evict victim via Clock
+• disk_->ReadPage(page_id, frame.data)
+• Insert (page_id → frame) into page_table_
+• Pin frame and return pointer
+
+User modifies frame
+↓
+mark_dirty(frame)
+↓
+release(page_id)
+↓
+If pin_count == 0 → frame eligible for replacement
+
+Shutdown
+↓
+flush_all() → writes all dirty frames to disk
+
+```
+
+### Testing Guidelines
+
+- **Page Fetch Test:** Request the same page twice; verify pin count increments and no duplicate load from disk.
+- **Eviction Test:** Fill the pool, then request a new page to trigger Clock replacement. Confirm dirty victim is flushed.
+- **Dirty Flag Test:** Modify a frame, call `mark_dirty()`, and ensure `flush_all()` persists changes to disk.
+- **Free List Test:** Ensure that newly allocated frames are first drawn from `FreeList` before eviction occurs.
+
+### Notes
+
+- The BufferManager is the _only_ layer that directly interacts with the DiskManager.
+- Higher layers (HeapFile, IndexFile, Catalog) should always acquire pages via `request()` and release them via `release()`.
+- Correct pin/unpin discipline is critical: pinned pages must never be evicted.
+- Replacement policy is pluggable — currently supports Clock via `ReplacementPolicyType::CLOCK`.

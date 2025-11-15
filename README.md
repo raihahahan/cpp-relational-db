@@ -64,43 +64,27 @@ make -j
 ctest --output-on-failure
 ```
 
-## Repository Structure
+## Repository Structure (WIP)
 
 ```
-
-📁 cpp-relational-db
-├── 📁 include
-│ ├── 📁 common
-│ ├── 📁 concurrency
-│ ├── 📁 config
-│ │ └── config.h
-│ ├── 📁 execution
-│ ├── 📁 network
-│ ├── 📁 parser
-│ ├── 📁 recovery
-│ └── 📁 storage
-│ └── disk_manager.h
-│
-├── 📁 src
-│ ├── 📁 concurrency
-│ ├── 📁 execution
-│ ├── 📁 network
-│ ├── 📁 parser
-│ ├── 📁 recovery
-│ └── 📁 storage
-│ ├── disk_manager.cpp
-│ └── README.md
-│
-├── 📁 tests
-│ └── 📁 storage
-│ └── test_disk_manager.cpp
-│
-├── .gitignore
-├── CMakeLists.txt
-├── LICENSE
-├── Makefile
-└── README.md
-
+include/
+├── storage/   # raw I/O, buffering, page-level
+│   ├── buffer_manager/
+│   ├── disk_manager/
+├── access/    # logical file organizations (heap, indexes)
+│   ├── heap/  # TODO
+│   │   ├── record.h
+│   │   ├── rid.h
+│   │   ├── slotted_page.h
+│   │   ├── heap_file.h
+│   │   └── heap_iterator.h
+│   ├── btree/  # TODO
+│   │   ├── btree_page.h
+│   │   ├── btree_index.h
+│   │   └── btree_iterator.h
+│   └── hash/
+│       ├── hash_index.h
+├── catalog/ # TODO
 ```
 
 ## Storage Layer Overview
@@ -108,23 +92,23 @@ ctest --output-on-failure
 The **storage subsystem** forms the foundation of the database.
 It is divided into three layers:
 
-| Component                  | Description                                         |
-| -------------------------- | --------------------------------------------------- |
-| **DiskManager**            | Handles raw page I/O and file operations.           |
-| **BufferManager**          | Manages in-memory pages and replacement policy.     |
-| **FilesLayer (Heap File)** | Stores tuples inside pages using Record IDs (RIDs). |
+| Component         | Description                                     |
+| ----------------- | ----------------------------------------------- |
+| **DiskManager**   | Handles raw page I/O and file operations.       |
+| **BufferManager** | Manages in-memory pages and replacement policy. |
 
 For detailed documentation, see the [storage/README.md](src/storage/README.md).
 
 ## Project Roadmap
 
-| Phase | Layer                       | Description                                                       | Status      |
-| ----- | --------------------------- | ----------------------------------------------------------------- | ----------- |
-| 1     | **Storage**                 | Implement DiskManager, BufferManager, and Heap File organization. | In Progress |
-| 2     | **Execution**               | Add query operators and execution plans (scan, join, aggregate).  | Planned     |
-| 3     | **Concurrency**             | Introduce locking, transaction management, and isolation.         | Planned     |
-| 4     | **Recovery**                | Implement write-ahead logging and crash recovery.                 | Planned     |
-| 5     | **Networking & SQL Parser** | Add a client-server interface and query parsing layer.            | Planned     |
+| Phase | Layer                       | Description                                                      | Status  |
+| ----- | --------------------------- | ---------------------------------------------------------------- | ------- |
+| 1     | **Storage**                 | Implement DiskManager, BufferManager                             | Done    |
+| 2     | **Access**                  | Heap file, B+-tree index, Hash index                             | Planned |
+| 3     | **Execution**               | Add query operators and execution plans (scan, join, aggregate). | Planned |
+| 4     | **Concurrency**             | Introduce locking, transaction management, and isolation.        | Planned |
+| 5     | **Recovery**                | Implement write-ahead logging and crash recovery.                | Planned |
+| 6     | **Networking & SQL Parser** | Add a client-server interface and query parsing layer.           | Planned |
 
 ## License
 
