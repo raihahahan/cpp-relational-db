@@ -9,11 +9,27 @@ build:
 	@cd $(BUILD_DIR) && cmake $(CMAKE_FLAGS) ..
 	@cmake --build $(BUILD_DIR) -j
 
+# ALL
 test: build
 	@cd $(BUILD_DIR) && ctest --output-on-failure
 
-test_disk_manager: build
+# STORAGE
+test_storage: build
+	make test_disk_manager
+	make test_buffer_manager
+	make test_freelist
+
+test_disk_manager:
 	@cd $(BUILD_DIR) && ./test_disk_manager
+
+test_buffer_manager:
+	@cd $(BUILD_DIR) && ./test_buffer_manager
+
+test_freelist:
+	@cd $(BUILD_DIR) && ./test_free_list
+
+test_clock:
+	@cd $(BUILD_DIR) && ./test_clock
 
 .PHONY: clean
 clean:

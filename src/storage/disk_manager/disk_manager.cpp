@@ -1,6 +1,7 @@
-#include "storage/disk_manager.h"
+#include "storage/disk_manager/disk_manager.h"
 #include "config/config.h"
 
+namespace db::storage {
 DiskManager::DiskManager(const std::string &db_file) {
     db_io_ = std::fstream(db_file, std::ios::in | std::ios::out | std::ios::binary);
     if (!db_io_.is_open()) {
@@ -18,19 +19,19 @@ DiskManager::~DiskManager() {
 };
 
 void DiskManager::ReadPage(page_id_t page_id, char* page_data) {
-    const size_t offset = static_cast<size_t>(page_id) * Config::PAGE_SIZE;
+    const size_t offset = static_cast<size_t>(page_id) * db::config::PAGE_SIZE;
     db_io_.seekg(offset);
-    db_io_.read(page_data, Config::PAGE_SIZE);
+    db_io_.read(page_data, db::config::PAGE_SIZE);
 }
 
 void DiskManager::WritePage(page_id_t page_id, const char* page_data) {
-    const size_t offset = static_cast<size_t>(page_id) * Config::PAGE_SIZE;
+    const size_t offset = static_cast<size_t>(page_id) * db::config::PAGE_SIZE;
     db_io_.seekp(offset);
-    db_io_.write(page_data, Config::PAGE_SIZE);
+    db_io_.write(page_data, db::config::PAGE_SIZE);
     db_io_.flush();
 }
 
-page_id_t DiskManager::AllocatePage() {
+db::storage::page_id_t DiskManager::AllocatePage() {
     if (!free_list.empty()) {
         // free list available
         // use a current free frame instead of adding to free list
@@ -50,5 +51,6 @@ void DiskManager::DeallocatePage(page_id_t page_id) {
 
 int DiskManager::GetNumPages() const {
     db_io_.seekg(0, std::ios::end);
-    return db_io_.tellg() / Config::PAGE_SIZE;
+    return db_io_.tellg() / db::config::PAGE_SIZE;
+}
 }
