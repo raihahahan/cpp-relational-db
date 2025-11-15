@@ -13,7 +13,7 @@ The policy integrates with the BufferManager through the Strategy Pattern, allow
 
 CLOCK approximates LRU by tracking a single boolean reference bit per frame and rotating a conceptual “clock hand” around the frame array. Whenever a page is accessed, its reference bit is set. During eviction, CLOCK scans sequentially until it finds a frame whose reference bit is clear and whose pin count is zero.
 
-![CLOCK](docs/clock.png)
+![CLOCK](../../../../docs/clock.png)
 
 The algorithm guarantees:
 

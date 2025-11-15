@@ -147,7 +147,7 @@ private:
 
 Retrieves a page from the buffer pool, loading it from disk if necessary.
 
-![Algorithm](docs/buffer_manager.png)
+![Algorithm](../../../docs/buffer_manager.png)
 
 1. **Page Hit**
 
