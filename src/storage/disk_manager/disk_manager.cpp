@@ -19,15 +19,15 @@ DiskManager::~DiskManager() {
 };
 
 void DiskManager::ReadPage(page_id_t page_id, char* page_data) {
-    const size_t offset = static_cast<size_t>(page_id) * Config::PAGE_SIZE;
+    const size_t offset = static_cast<size_t>(page_id) * db::config::PAGE_SIZE;
     db_io_.seekg(offset);
-    db_io_.read(page_data, Config::PAGE_SIZE);
+    db_io_.read(page_data, db::config::PAGE_SIZE);
 }
 
 void DiskManager::WritePage(page_id_t page_id, const char* page_data) {
-    const size_t offset = static_cast<size_t>(page_id) * Config::PAGE_SIZE;
+    const size_t offset = static_cast<size_t>(page_id) * db::config::PAGE_SIZE;
     db_io_.seekp(offset);
-    db_io_.write(page_data, Config::PAGE_SIZE);
+    db_io_.write(page_data, db::config::PAGE_SIZE);
     db_io_.flush();
 }
 
@@ -51,6 +51,6 @@ void DiskManager::DeallocatePage(page_id_t page_id) {
 
 int DiskManager::GetNumPages() const {
     db_io_.seekg(0, std::ios::end);
-    return db_io_.tellg() / Config::PAGE_SIZE;
+    return db_io_.tellg() / db::config::PAGE_SIZE;
 }
 }

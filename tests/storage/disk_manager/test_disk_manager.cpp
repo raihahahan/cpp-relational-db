@@ -29,13 +29,13 @@ TEST_F(DiskManagerTest, WriteBufferTest) {
     // write buffer to page id 0
     page_id_t id = dm->AllocatePage();
 
-    char write_buf[Config::PAGE_SIZE];
-    std::memset(write_buf, 0, Config::PAGE_SIZE);
+    char write_buf[db::config::PAGE_SIZE];
+    std::memset(write_buf, 0, db::config::PAGE_SIZE);
     dm->WritePage(id, write_buf);
 
     // read page id 0
-    char read_buf[Config::PAGE_SIZE];
-    std::memset(read_buf, 0, Config::PAGE_SIZE);
+    char read_buf[db::config::PAGE_SIZE];
+    std::memset(read_buf, 0, db::config::PAGE_SIZE);
     dm->ReadPage(id, read_buf);
     EXPECT_EQ(std::strcmp(read_buf, write_buf), 0);
 }
