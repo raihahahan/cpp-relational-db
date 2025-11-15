@@ -1,9 +1,11 @@
+#pragma once
 #include <vector>
-#include "buffer_manager/frame.h"
+#include "storage/buffer_manager/frame.h"
 
 namespace db::storage {
 class FreeList {
 public:
+    FreeList();
     // adds an unused frame back to the freelist.
     // prerequisite: frame has pin_count == 0 and no page is assigned.
     void add(Frame* frame);
