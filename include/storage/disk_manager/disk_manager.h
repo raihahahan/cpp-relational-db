@@ -4,11 +4,12 @@
 #include <fstream>
 #include <string>
 #include <vector> 
+#include "storage/disk_manager/idisk_manager.h"
 
 namespace db::storage {
 using page_id_t = int32_t;
 
-class DiskManager {
+class DiskManager : public IDiskManager {
 public:
     explicit DiskManager(const std::string &db_file);
     DiskManager(const DiskManager& other) = delete;
@@ -16,12 +17,12 @@ public:
     DiskManager(DiskManager&& other) = delete;
     DiskManager& operator=(DiskManager&& other) = delete;
 
-    ~DiskManager();
+    ~DiskManager() override;
 
-    void ReadPage(page_id_t page_id, char* page_data);
-    void WritePage(page_id_t page_id, const char* page_data);
-    page_id_t AllocatePage();
-    void DeallocatePage(page_id_t page_id);
+    void ReadPage(page_id_t page_id, char* page_data) override;
+    void WritePage(page_id_t page_id, const char* page_data) override;
+    page_id_t AllocatePage() override;
+    void DeallocatePage(page_id_t page_id) override;
 
     int GetNumPages() const;
 
