@@ -45,3 +45,4 @@ settings.json
 
 # database specific
 *.db
+.vscode
