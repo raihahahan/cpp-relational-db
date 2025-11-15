@@ -1,13 +1,14 @@
-#include "buffer_manager/frame.h"
+#pragma once
+#include "storage/buffer_manager/frame.h"
 
 namespace db::storage {
 class IReplacementPolicy {
 public:
     virtual ~IReplacementPolicy() = default;
 
-    virtual void recordAccess(Frame*) = 0; // page hit
-    virtual void recordLoad(Frame* f) = 0; // page loaded into a frame
-    virtual void recordUnpin(Frame* f) = 0; // unpinned, may become candidate
-    virtual Frame* chooseVictim(const std::vector<Frame*>& frames) = 0;
+    virtual void record_access(Frame*) = 0; // page hit
+    virtual void record_load(Frame* f) = 0; // page loaded into a frame
+    virtual void record_unpin(Frame* f) = 0; // unpinned, may become candidate
+    virtual Frame* choose_victim() = 0;
 };
 }
