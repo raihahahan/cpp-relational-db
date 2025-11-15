@@ -79,10 +79,10 @@ class IReplacementPolicy {
 public:
     virtual ~IReplacementPolicy() = default;
 
-    virtual void recordAccess(Frame* f) = 0;  // page hit
-    virtual void recordLoad(Frame* f) = 0;    // page loaded into a frame
-    virtual void recordUnpin(Frame* f) = 0;   // unpinned, may become candidate
-    virtual Frame* chooseVictim(const std::vector<Frame*>& frames) = 0;
+    virtual void record_access(Frame* f) = 0;  // page hit
+    virtual void record_load(Frame* f) = 0;    // page loaded into a frame
+    virtual void record_unpin(Frame* f) = 0;   // unpinned, may become candidate
+    virtual Frame* choose_victim(const std::vector<Frame*>& frames) = 0;
 };
 ```
 
@@ -118,12 +118,12 @@ Public interface:
 ```cpp
 class BufferManager {
 public:
-    BufferManager(size_t pool_size, std::unique_ptr<IReplacementPolicy> policy);
+    BufferManager(std::unique_ptr<IReplacementPolicy> policy, DiskManager* dm);
 
     Frame* request(page_id_t pid);
     void release(page_id_t pid);
-    void markDirty(page_id_t pid);
-    void flushAll();
+    void mark_dirty(Frame* frame);
+    void flush_all();
 
 private:
     Frame* evict();
@@ -132,12 +132,12 @@ private:
     void pin(Frame* f);
     void unpin(Frame* f);
 
-    std::unordered_map<page_id_t, Frame*> page_table;
-    std::vector<Frame> frames;
-    std::vector<Frame*> frame_ptrs;   // used by replacement policy
-    FreeList free_list;
-    std::unique_ptr<IReplacementPolicy> policy;
-    DiskManager* disk;
+    std::unordered_map<page_id_t, Frame*> page_table_;
+    std::vector<Frame> pool_;
+    std::vector<Frame*> frame_ptrs_;   // used by replacement policy
+    FreeList free_list_;
+    std::unique_ptr<IReplacementPolicy> policy_;
+    DiskManager* disk_;
 };
 ```
 
@@ -147,11 +147,13 @@ private:
 
 Retrieves a page from the buffer pool, loading it from disk if necessary.
 
+![Algorithm](docs/buffer_manager.png)
+
 1. **Page Hit**
 
    - Frame is found in page table.
    - Pin count incremented.
-   - Policy is notified (`recordAccess`).
+   - Policy is notified (`record_access`).
    - Return the frame.
 
 2. **Free Frame Available**

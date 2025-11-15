@@ -23,7 +23,7 @@ It does not perform buffering, caching, eviction, or concurrency control. These 
 All physical pages have the same size:
 
 ```
-Config::PAGE_SIZE  // e.g., 4096 bytes
+db::config::PAGE_SIZE  // e.g., 4096 bytes
 ```
 
 The file layout is logical and simple:

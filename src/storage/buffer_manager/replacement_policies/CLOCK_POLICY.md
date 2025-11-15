@@ -13,6 +13,8 @@ The policy integrates with the BufferManager through the Strategy Pattern, allow
 
 CLOCK approximates LRU by tracking a single boolean reference bit per frame and rotating a conceptual “clock hand” around the frame array. Whenever a page is accessed, its reference bit is set. During eviction, CLOCK scans sequentially until it finds a frame whose reference bit is clear and whose pin count is zero.
 
+![CLOCK](docs/clock.png)
+
 The algorithm guarantees:
 
 - O(1) update cost on page access
@@ -37,18 +39,18 @@ The policy stores no state inside `Frame` itself. All metadata is kept internal 
 
 The BufferManager notifies the policy at certain lifecycle events:
 
-- `recordAccess(frame)`
+- `record_acess(frame)`
   Called when a page is accessed or pinned on a buffer hit.
 
-- `recordLoad(frame)`
+- `record_load(frame)`
   Called when a page is loaded into a frame for the first time.
 
-- `recordUnpin(frame)`
+- `record_unpin(frame)`
   Called when a frame’s pin count decreases; may become an eviction candidate.
 
 The BufferManager calls:
 
-- `chooseVictim(frame_ptrs)`
+- `choose_victim(frame_ptrs)`
   When eviction is required.
 
 The policy returns a pointer to a frame that has `pin_count == 0` and whose reference bit has been cleared, marking it as a suitable victim.
@@ -85,11 +87,11 @@ class ClockPolicy : public IReplacementPolicy {
 public:
     explicit ClockPolicy(size_t pool_size);
 
-    void recordAccess(Frame* f) override;
-    void recordLoad(Frame* f) override;
-    void recordUnpin(Frame* f) override;
+    void record_access(Frame* f) override;
+    void record_load(Frame* f) override;
+    void record_unpin(Frame* f) override;
 
-    Frame* chooseVictim(const std::vector<Frame*>& frames) override;
+    Frame* choose_victim(const std::vector<Frame*>& frames) override;
 
 private:
     std::vector<int> ref_bits;
@@ -99,16 +101,16 @@ private:
 
 ### Key behaviors:
 
-- `recordAccess`
+- `record_access`
   Sets the reference bit upon page hit.
 
-- `recordLoad`
+- `record_load`
   Clears the reference bit when a frame is loaded (new page).
 
-- `recordUnpin`
+- `record_unpin`
   CLOCK does not require special handling here; frame may become a candidate.
 
-- `chooseVictim`
+- `choose_victim`
   Performs the CLOCK sweep until it finds a frame with:
 
   - `ref_bits[id] == 1`
