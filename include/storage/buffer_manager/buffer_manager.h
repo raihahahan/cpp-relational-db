@@ -1,18 +1,21 @@
-#include "buffer_manager/free_list.h"
-#include "buffer_manager/frame.h"
-#include "buffer_manager/policy/replacement.h"
-#include "disk_manager/disk_manager.h"
+#pragma once
+#include "storage/buffer_manager/free_list.h"
+#include "storage/buffer_manager/frame.h"
+#include "storage/buffer_manager/replacement_policies/replacement.h"
+#include "storage/disk_manager/idisk_manager.h"
 
 
 namespace db::storage {
+
+enum class ReplacementPolicyType { CLOCK };
 class BufferManager {
 public:
-    BufferManager(size_t pool_size, std::unique_ptr<IReplacementPolicy> policy);
+    BufferManager(ReplacementPolicyType type, IDiskManager* dm);
 
     Frame* request(page_id_t pid);
     void release(page_id_t pid);
-    void markDirty(page_id_t pid);
-    void flushAll();
+    void mark_dirty(Frame* frame);
+    void flush_all();
 
 private:
     Frame* evict();
@@ -21,11 +24,11 @@ private:
     void pin(Frame* f);
     void unpin(Frame* f);
 
-    std::unordered_map<page_id_t, Frame*> page_table;
-    std::vector<Frame> frames;
-    std::vector<Frame*> frame_ptrs;   // used by replacement policy
-    FreeList free_list;
-    std::unique_ptr<IReplacementPolicy> policy;
-    DiskManager* disk;
+    std::unordered_map<page_id_t, Frame*> page_table_;
+    std::vector<Frame> pool_;
+    std::vector<Frame*> frame_ptrs_;   // used by replacement policy
+    FreeList free_list_;
+    std::unique_ptr<IReplacementPolicy> policy_;
+    IDiskManager* disk_;
 };
 }
