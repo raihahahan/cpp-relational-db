@@ -45,7 +45,7 @@ Database file: mydb.db
 -----------------------------------------------
 | Page 0 | Page 1 | Page 2 | Page 3 | Page 4 |
 -----------------------------------------------
-  0KB     4KB      8KB     12KB     16KB
+  0KB     8KB      16KB     24KB     32KB
 ```
 
 Example operations:
