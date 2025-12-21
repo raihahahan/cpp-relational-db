@@ -100,7 +100,7 @@ void SlottedPage::Update(uint16_t slot_id, const char* new_data, std::size_t len
     }
 };
 
-bool SlottedPage::Remove(uint16_t slot_id) {
+bool SlottedPage::Delete(uint16_t slot_id) {
     auto* header = GetHeader();
     if (slot_id >= header->num_slots) return false;
 
@@ -109,11 +109,11 @@ bool SlottedPage::Remove(uint16_t slot_id) {
     return true;
 };
 
-PageHeader* SlottedPage::GetHeader() {
+PageHeader* SlottedPage::GetHeader() const {
     return reinterpret_cast<PageHeader*>(_data);
 };
 
-Slot* SlottedPage::GetSlot(uint16_t slot_id) {
+Slot* SlottedPage::GetSlot(uint16_t slot_id) const {
     return reinterpret_cast<Slot*>(_data + sizeof(PageHeader) + 
                                                 slot_id * sizeof(Slot));
 };

@@ -27,14 +27,14 @@ public:
     
     // modifiers
     std::optional<uint16_t> Insert(const char* data, std::size_t len);
-    std::optional<std::span<const char>> getbsize(uint16_t slot_id);
+    std::optional<std::span<const char>> Get(uint16_t slot_id);
     void Update(uint16_t slot_id, const char* new_data, std::size_t len);
-    bool Remove(uint16_t slot_id);
+    bool Delete(uint16_t slot_id);
 
 private:
     explicit SlottedPage(char* page_data);
-    PageHeader* GetHeader();
-    Slot* GetSlot(uint16_t slot_id);
+    PageHeader* GetHeader() const;
+    Slot* GetSlot(uint16_t slot_id) const;
     char* _data; // non-owning pointer of actual data
     size_t FreeSpace() const; 
 };
