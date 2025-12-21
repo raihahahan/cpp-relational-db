@@ -64,29 +64,6 @@ make -j
 ctest --output-on-failure
 ```
 
-## Repository Structure (WIP)
-
-```
-include/
-├── storage/   # raw I/O, buffering, page-level
-│   ├── buffer_manager/
-│   ├── disk_manager/
-├── access/    # logical file organizations (heap, indexes)
-│   ├── heap/  # TODO
-│   │   ├── record.h
-│   │   ├── rid.h
-│   │   ├── slotted_page.h
-│   │   ├── heap_file.h
-│   │   └── heap_iterator.h
-│   ├── btree/  # TODO
-│   │   ├── btree_page.h
-│   │   ├── btree_index.h
-│   │   └── btree_iterator.h
-│   └── hash/
-│       ├── hash_index.h
-├── catalog/ # TODO
-```
-
 ## Storage Layer Overview
 
 The **storage subsystem** forms the foundation of the database.
