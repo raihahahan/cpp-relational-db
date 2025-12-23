@@ -27,6 +27,18 @@ page_data[0]          page_data[PAGE_SIZE-1]
 */
 
 SlottedPage::SlottedPage(char* page_data) : _data{page_data} {};
+SlottedPage::SlottedPage() : _data{nullptr} {};
+SlottedPage::SlottedPage(const SlottedPage& other) : _data{other._data} {};
+SlottedPage& SlottedPage::operator=(const SlottedPage& other) {
+    if (this != &other) {
+        _data = other._data;
+    }
+
+    return *this;
+};
+
+SlottedPage::~SlottedPage() = default;
+
 
 SlottedPage SlottedPage::FromBuffer(char* page_data) {
     SlottedPage sp{page_data};

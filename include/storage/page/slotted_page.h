@@ -19,16 +19,11 @@ struct PageHeader {
 
 class SlottedPage {
 public:
-    SlottedPage() : _data{nullptr} {};
+    SlottedPage();
     SlottedPage(char* page_data);
-    SlottedPage(const SlottedPage& other) : _data{other._data} {};
-    SlottedPage& operator=(const SlottedPage& other) {
-        if (this != &other) {
-            _data = other._data;
-        }
-
-        return *this;
-    };
+    SlottedPage(const SlottedPage& other);
+    SlottedPage& operator=(const SlottedPage& other);
+    ~SlottedPage();
 
     // initialisers
     // 1. existing page
@@ -48,5 +43,6 @@ private:
     PageHeader* GetHeader() const;
     Slot* GetSlot(uint16_t slot_id) const;
     char* _data; // non-owning pointer of actual data
+    uint16_t _base_offset;
 };
 }
