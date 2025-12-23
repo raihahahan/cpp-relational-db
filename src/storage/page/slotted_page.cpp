@@ -8,7 +8,7 @@ namespace db::storage {
 +------------------------+  <- page start
 | PageHeader             |
 | - num_slots            |
-| - free_space_offset    |  grows downward
+| - free_space_offset    | 
 +------------------------+
 | SlotDirectory[]        |  grows upward
 | (offset, length)       |

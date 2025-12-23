@@ -14,7 +14,7 @@ Each page is a fixed-size byte array (`PAGE_SIZE`) with the following layout:
 +------------------------+  <- page start (low address)
 | PageHeader             |
 | - num_slots            |
-| - free_space_offset    |  grows downward
+| - free_space_offset    |
 +------------------------+
 | SlotDirectory[]        |  grows upward
 | (offset, length)       |
