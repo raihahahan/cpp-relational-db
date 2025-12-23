@@ -46,3 +46,5 @@ settings.json
 # database specific
 *.db
 .vscode
+
+.DS_Store

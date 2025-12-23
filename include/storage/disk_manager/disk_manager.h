@@ -7,7 +7,6 @@
 #include "storage/disk_manager/idisk_manager.h"
 
 namespace db::storage {
-using page_id_t = int32_t;
 
 class DiskManager : public IDiskManager {
 public:
