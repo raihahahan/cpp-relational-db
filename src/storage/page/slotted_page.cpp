@@ -1,5 +1,5 @@
-#include "storage/page/slotted_page.h";
-#include "config/config.h";
+#include "storage/page/slotted_page.h"
+#include "config/config.h"
 #include <optional>
 
 namespace db::storage {
@@ -53,7 +53,7 @@ std::optional<uint16_t> SlottedPage::Insert(const char* data, std::size_t len) {
     // 2. create new slot
     uint16_t slot_offset = sizeof(PageHeader) + 
                                 header->num_slots * sizeof(Slot);
-    Slot new_slot{header->free_space_offset, len};
+    Slot new_slot{header->free_space_offset, static_cast<uint16_t>(len)};
     std::memcpy(_data + slot_offset, &new_slot, sizeof(Slot));
     uint16_t slot_id = header->num_slots;
     header->num_slots++;

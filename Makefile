@@ -31,6 +31,9 @@ test_freelist:
 test_clock:
 	@cd $(BUILD_DIR) && ./test_clock
 
+test_slotted_page:
+	@cd $(BUILD_DIR) && ./test_slotted_page
+
 .PHONY: clean
 clean:
 	@rm -rf $(BUILD_DIR)
