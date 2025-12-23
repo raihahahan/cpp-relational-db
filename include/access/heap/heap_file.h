@@ -5,6 +5,7 @@
 #include "access/record.h"
 #include "storage/buffer_manager/buffer_manager.h"
 #include "storage/page/slotted_page.h"
+#include "access/heap/heap_iterator.h"
 
 #define INVALID_PAGE_ID -1
 using BufferManager = db::storage::BufferManager;
@@ -26,6 +27,7 @@ public:
     RID Insert(const char* data, size_t len);
     std::optional<Record> Get(const RID& rid);
     bool Delete(const RID& rid);
+    HeapIterator Begin();
 
 private:
     void InitHeapPage(char* raw_page_data);
