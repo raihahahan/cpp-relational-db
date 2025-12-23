@@ -73,6 +73,7 @@ It is divided into three layers:
 | ----------------- | ----------------------------------------------- |
 | **DiskManager**   | Handles raw page I/O and file operations.       |
 | **BufferManager** | Manages in-memory pages and replacement policy. |
+| **Slotted Page**  | Organisation of data within each page.          |
 
 For detailed documentation, see the [storage/README.md](src/storage/README.md).
 
