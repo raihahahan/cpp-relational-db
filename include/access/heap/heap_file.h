@@ -23,8 +23,8 @@ static_assert(sizeof(HeapPageHeader) % 8 == 0);
 
 class HeapFile {
 public:
-    explicit HeapFile(BufferManager& bm, 
-                        DiskManager& dm,
+    explicit HeapFile(BufferManager* bm, 
+                        DiskManager* dm,
                         file_id_t file_id, 
                         page_id_t first_page_id);
     
@@ -36,8 +36,8 @@ public:
 
 private:
     void InitHeapPage(char* raw_page_data);
-    BufferManager& _bm;
-    DiskManager& _dm;
+    BufferManager* _bm;
+    DiskManager* _dm;
     file_id_t _file_id;
     page_id_t _first_page_id;
 };
