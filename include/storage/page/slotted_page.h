@@ -34,7 +34,7 @@ public:
     // modifiers
     std::optional<uint16_t> Insert(const char* data, std::size_t len);
     std::optional<std::span<const char>> Get(uint16_t slot_id);
-    void Update(uint16_t slot_id, const char* new_data, std::size_t len);
+    bool Update(uint16_t slot_id, const char* new_data, std::size_t len);
     bool Delete(uint16_t slot_id);
 
     size_t FreeSpace() const; 

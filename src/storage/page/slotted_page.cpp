@@ -86,10 +86,10 @@ std::optional<std::span<const char>> SlottedPage::Get(uint16_t slot_id) {
     return std::span<const char>(_data + slot->offset, slot->length);
 };
 
-void SlottedPage::Update(uint16_t slot_id, const char* new_data, std::size_t len) {
+bool SlottedPage::Update(uint16_t slot_id, const char* new_data, std::size_t len) {
     auto* header = GetHeader();
     // check if slot is valid
-    if (slot_id >= header->num_slots) return;
+    if (slot_id >= header->num_slots) return false;
     
     auto* slot = GetSlot(slot_id);
     
@@ -100,7 +100,7 @@ void SlottedPage::Update(uint16_t slot_id, const char* new_data, std::size_t len
         slot->length = len;
     } else {
         // case 2: need to bring to new offset
-        if (FreeSpace() < len) return;
+        if (FreeSpace() < len) return false;
 
         // 1. update slot
         header->free_space_offset -= len;
@@ -110,6 +110,8 @@ void SlottedPage::Update(uint16_t slot_id, const char* new_data, std::size_t len
         // 2. create data
         std::memcpy(_data + header->free_space_offset, new_data, len);
     }
+
+    return true;
 };
 
 bool SlottedPage::Delete(uint16_t slot_id) {
