@@ -25,6 +25,7 @@ add_library(storage
     src/storage/buffer_manager/free_list.cpp
     src/storage/buffer_manager/replacement_policies/clock_policy.cpp
     src/storage/page/slotted_page.cpp
+    src/access/heap/heap_file.cpp
 )
 
 # PUBLIC headers for library consumers
