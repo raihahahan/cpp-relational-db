@@ -20,16 +20,16 @@ struct PageHeader {
 class SlottedPage {
 public:
     SlottedPage();
-    SlottedPage(char* page_data);
+    SlottedPage(char* page_data, uint16_t offset);
     SlottedPage(const SlottedPage& other);
     SlottedPage& operator=(const SlottedPage& other);
     ~SlottedPage();
 
     // initialisers
     // 1. existing page
-    static SlottedPage FromBuffer(char* page_data);
+    static SlottedPage FromBuffer(char* page_data, uint16_t offset);
     // 2. new page
-    static void Init(char* page_data);
+    static void Init(char* page_data, uint16_t offset);
     
     // modifiers
     std::optional<uint16_t> Insert(const char* data, std::size_t len);
@@ -43,6 +43,6 @@ private:
     PageHeader* GetHeader() const;
     Slot* GetSlot(uint16_t slot_id) const;
     char* _data; // non-owning pointer of actual data
-    uint16_t _base_offset;
+    uint16_t _offset;
 };
 }

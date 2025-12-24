@@ -6,6 +6,8 @@ namespace db::storage {
 
 /*
 +------------------------+  <- page start
+| Base offset            |
++------------------------+ 
 | PageHeader             |
 | - num_slots            |
 | - free_space_offset    | 
@@ -26,12 +28,15 @@ page_data[0]          page_data[PAGE_SIZE-1]
 - grows downward: decreasing addresses towards the beginning of the page
 */
 
-SlottedPage::SlottedPage(char* page_data) : _data{page_data} {};
-SlottedPage::SlottedPage() : _data{nullptr} {};
-SlottedPage::SlottedPage(const SlottedPage& other) : _data{other._data} {};
+SlottedPage::SlottedPage(char* page_data, uint16_t offset) : 
+                            _data{page_data}, _offset{offset} {};
+SlottedPage::SlottedPage() : _data{nullptr}, _offset{0} {};
+SlottedPage::SlottedPage(const SlottedPage& other) : 
+                            _data{other._data}, _offset{other._offset} {};
 SlottedPage& SlottedPage::operator=(const SlottedPage& other) {
     if (this != &other) {
         _data = other._data;
+        _offset = other._offset;
     }
 
     return *this;
@@ -39,14 +44,13 @@ SlottedPage& SlottedPage::operator=(const SlottedPage& other) {
 
 SlottedPage::~SlottedPage() = default;
 
-
-SlottedPage SlottedPage::FromBuffer(char* page_data) {
-    SlottedPage sp{page_data};
+SlottedPage SlottedPage::FromBuffer(char* page_data, uint16_t offset) {
+    SlottedPage sp{page_data, offset};
     return sp;
 };
 
-void SlottedPage::Init(char* page_data) {
-    auto* header = reinterpret_cast<PageHeader*>(page_data);
+void SlottedPage::Init(char* page_data, uint16_t offset) {
+    auto* header = reinterpret_cast<PageHeader*>(page_data + offset);
     header->num_slots = 0;
     header->free_space_offset = config::PAGE_SIZE;
 };
@@ -63,7 +67,7 @@ std::optional<uint16_t> SlottedPage::Insert(const char* data, std::size_t len) {
     std::memcpy(_data + header->free_space_offset, data, len);
 
     // 2. create new slot
-    uint16_t slot_offset = sizeof(PageHeader) + 
+    uint16_t slot_offset = _offset + sizeof(PageHeader) + 
                                 header->num_slots * sizeof(Slot);
     Slot new_slot{header->free_space_offset, static_cast<uint16_t>(len)};
     std::memcpy(_data + slot_offset, &new_slot, sizeof(Slot));
@@ -124,18 +128,18 @@ bool SlottedPage::Delete(uint16_t slot_id) {
 };
 
 PageHeader* SlottedPage::GetHeader() const {
-    return reinterpret_cast<PageHeader*>(_data);
+    return reinterpret_cast<PageHeader*>(_data + _offset);
 };
 
 Slot* SlottedPage::GetSlot(uint16_t slot_id) const {
-    return reinterpret_cast<Slot*>(_data + sizeof(PageHeader) + 
+    return reinterpret_cast<Slot*>(_data + _offset + sizeof(PageHeader) + 
                                                 slot_id * sizeof(Slot));
 };
 
 size_t SlottedPage::FreeSpace() const {
     auto* header = reinterpret_cast<PageHeader*>(_data);
     size_t slot_dir_end =
-        sizeof(PageHeader) + header->num_slots * sizeof(Slot);
+        _offset + sizeof(PageHeader) + header->num_slots * sizeof(Slot);
 
     return header->free_space_offset - slot_dir_end;
 };

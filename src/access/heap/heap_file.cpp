@@ -18,14 +18,14 @@ HeapFile::HeapFile(BufferManager& bm,
 void HeapFile::InitHeapPage(char* raw_page) {
     auto* heap_hdr = reinterpret_cast<HeapPageHeader*>(raw_page);
     heap_hdr->next_page_id = INVALID_PAGE_ID;
-    SlottedPage::Init(raw_page + sizeof(HeapPageHeader));
+    SlottedPage::Init(raw_page, sizeof(HeapPageHeader));
 };
 
 std::optional<Record> HeapFile::Get(const RID& rid) {
     auto frame = _bm.request(rid.page_id);
     if (frame == nullptr) return std::nullopt;
 
-    auto sp = SlottedPage::FromBuffer(frame->data + sizeof(HeapPageHeader));
+    auto sp = SlottedPage::FromBuffer(frame->data, sizeof(HeapPageHeader));
     auto data = sp.Get(rid.slot_id);
 
     if (data.has_value()) {
@@ -40,7 +40,7 @@ std::optional<RID> HeapFile::Insert(const char* data, size_t len) {
 
     while (page_id != INVALID_PAGE_ID) {
         Frame* frame = _bm.request(page_id);
-        auto sp = SlottedPage::FromBuffer(frame->data + sizeof(HeapPageHeader));
+        auto sp = SlottedPage::FromBuffer(frame->data, sizeof(HeapPageHeader));
         auto slot_id = sp.Insert(data, len);
         if (slot_id.has_value()) {
             return RID{page_id, *slot_id};
@@ -55,7 +55,7 @@ std::optional<RID> HeapFile::Insert(const char* data, size_t len) {
     auto frame = _bm.request(page_id);
     
     HeapFile::InitHeapPage(frame->data);
-    auto sp = SlottedPage::FromBuffer(frame->data + sizeof(HeapPageHeader));
+    auto sp = SlottedPage::FromBuffer(frame->data, sizeof(HeapPageHeader));
     auto slot_id = sp.Insert(data, len);
 
     if (slot_id.has_value()) {
@@ -72,7 +72,7 @@ bool HeapFile::Update(const char* new_data, size_t len, const RID& rid) {
     auto frame = _bm.request(rid.page_id);
     if (frame == nullptr) return false;
 
-    auto sp = SlottedPage::FromBuffer(frame->data + sizeof(HeapPageHeader));
+    auto sp = SlottedPage::FromBuffer(frame->data, sizeof(HeapPageHeader));
 
     return sp.Update(rid.slot_id, new_data, len);
 }
@@ -81,7 +81,7 @@ bool HeapFile::Delete(const RID& rid) {
     auto frame = _bm.request(rid.page_id);
     if (frame == nullptr) return false;
 
-    auto sp = SlottedPage::FromBuffer(frame->data + sizeof(HeapPageHeader));
+    auto sp = SlottedPage::FromBuffer(frame->data, sizeof(HeapPageHeader));
 
     return sp.Delete(rid.slot_id);
 };
