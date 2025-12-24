@@ -19,6 +19,7 @@ using page_id_t = db::storage::page_id_t;
 struct alignas(8) HeapPageHeader {
     page_id_t next_page_id;
 };
+static_assert(sizeof(HeapPageHeader) % 8 == 0);
 
 class HeapFile {
 public:
