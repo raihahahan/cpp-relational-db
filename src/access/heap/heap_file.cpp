@@ -37,6 +37,7 @@ std::optional<Record> HeapFile::Get(const RID& rid) {
 
 std::optional<RID> HeapFile::Insert(const char* data, size_t len) {
     page_id_t page_id = _first_page_id;
+    HeapPageHeader* hdr = nullptr;
 
     while (page_id != INVALID_PAGE_ID) {
         Frame* frame = _bm.request(page_id);
@@ -46,13 +47,14 @@ std::optional<RID> HeapFile::Insert(const char* data, size_t len) {
             return RID{page_id, *slot_id};
         }
 
-        auto* hdr = reinterpret_cast<HeapPageHeader*>(frame->data);
+        hdr = reinterpret_cast<HeapPageHeader*>(frame->data);
         page_id = hdr->next_page_id;
     }
 
     // no page fits
     page_id = _dm.AllocatePage();
     auto frame = _bm.request(page_id);
+    hdr->next_page_id = page_id;
     
     HeapFile::InitHeapPage(frame->data);
     auto sp = SlottedPage::FromBuffer(frame->data, sizeof(HeapPageHeader));
