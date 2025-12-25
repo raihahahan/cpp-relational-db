@@ -26,6 +26,7 @@ add_library(storage
     src/storage/buffer_manager/replacement_policies/clock_policy.cpp
     src/storage/page/slotted_page.cpp
     src/access/heap/heap_file.cpp
+    src/access/heap/heap_iterator.cpp
 )
 
 # PUBLIC headers for library consumers
@@ -37,7 +38,7 @@ target_include_directories(storage PUBLIC
 # Tests under tests/storage/*
 # --------------------------------------------------------------
 file(GLOB_RECURSE TEST_SOURCES
-    ${PROJECT_SOURCE_DIR}/tests/storage/*/*.cpp
+    ${PROJECT_SOURCE_DIR}/tests/*/*/*.cpp
 )
 
 message(STATUS "Found test files:")
