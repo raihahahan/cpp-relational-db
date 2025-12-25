@@ -16,10 +16,7 @@ FetchContent_MakeAvailable(googletest)
 
 enable_testing()
 
-# --------------------------------------------------------------
-# Library: storage
-# --------------------------------------------------------------
-add_library(storage
+add_library(main
     src/storage/disk_manager/disk_manager.cpp
     src/storage/buffer_manager/buffer_manager.cpp
     src/storage/buffer_manager/free_list.cpp
@@ -30,12 +27,12 @@ add_library(storage
 )
 
 # PUBLIC headers for library consumers
-target_include_directories(storage PUBLIC
+target_include_directories(main PUBLIC
     ${PROJECT_SOURCE_DIR}/include
 )
 
 # --------------------------------------------------------------
-# Tests under tests/storage/*
+# Tests under tests/*/*
 # --------------------------------------------------------------
 file(GLOB_RECURSE TEST_SOURCES
     ${PROJECT_SOURCE_DIR}/tests/*/*/*.cpp
@@ -63,7 +60,7 @@ foreach(test_src ${TEST_SOURCES})
     )
 
     target_link_libraries(${test_name} PRIVATE
-        storage
+        main
         GTest::gtest_main
     )
 
