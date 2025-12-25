@@ -32,7 +32,13 @@ public:
     std::optional<Record> Get(const RID& rid);
     bool Update(const char* new_data, size_t len, const RID& rid);
     bool Delete(const RID& rid);
-    HeapIterator Begin();
+
+    // accessor
+    BufferManager* GetBm() const;
+
+    // iterator
+    HeapIterator begin();   
+    HeapIterator end();
 
 private:
     void InitHeapPage(char* raw_page_data);
@@ -40,5 +46,7 @@ private:
     DiskManager* _dm;
     file_id_t _file_id;
     page_id_t _first_page_id;
+
+    friend class HeapIterator;
 };
 }

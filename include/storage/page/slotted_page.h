@@ -38,6 +38,7 @@ public:
     bool Delete(uint16_t slot_id);
 
     size_t FreeSpace() const; 
+    uint16_t GetNumSlots();
 
 private:
     PageHeader* GetHeader() const;

@@ -135,4 +135,32 @@ bool HeapFile::Delete(const RID& rid) {
     _bm->release(rid.page_id);
     return res;
 };
+
+BufferManager* HeapFile::GetBm() const {
+    return _bm;
+}
+
+HeapIterator HeapFile::begin() {
+    return HeapIterator(this, _first_page_id, 0, true);
+}
+
+HeapIterator HeapFile::end() {
+    return HeapIterator(this, static_cast<page_id_t>(INVALID_PAGE_ID), 0, false);
+}
+
+Record HeapIterator::operator*() {
+    if (!_has_next) {
+        throw std::runtime_error("Dereferencing end iterator");
+    }
+
+    RID rid{_curr_page, _curr_slot};
+    return _heap->Get(rid).value();
+}
+
+HeapIterator& HeapIterator::operator++() {
+    if (!_has_next) return *this;
+    _curr_slot++;
+    Advance();
+    return *this;
+}
 }
