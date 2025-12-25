@@ -145,7 +145,7 @@ size_t SlottedPage::FreeSpace() const {
 };
 
 uint16_t SlottedPage::GetNumSlots() {
-    auto* header = reinterpret_cast<PageHeader*>(_data);
+    auto* header = GetHeader();
     return header->num_slots;
 }
 }

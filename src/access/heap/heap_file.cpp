@@ -141,6 +141,9 @@ BufferManager* HeapFile::GetBm() const {
 }
 
 HeapIterator HeapFile::begin() {
+    if (_first_page_id == INVALID_PAGE_ID) {
+        return end();
+    }
     return HeapIterator(this, _first_page_id, 0, true);
 }
 
