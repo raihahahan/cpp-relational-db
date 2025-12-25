@@ -34,6 +34,17 @@ test_clock:
 test_slotted_page:
 	@cd $(BUILD_DIR) && ./test_slotted_page
 
+# ACCESS
+test_access:
+	make test_heap_file
+	make test_heap_iterator
+
+test_heap_file:
+	@cd $(BUILD_DIR) && ./test_heap_file
+
+test_heap_iterator:
+	@cd $(BUILD_DIR) && ./test_heap_iterator
+
 .PHONY: clean
 clean:
 	@rm -rf $(BUILD_DIR)

@@ -11,6 +11,6 @@ struct RID {
 
 struct Record {
     RID rid;
-    std::vector<char> data;
+    const char* data;
 };
 }

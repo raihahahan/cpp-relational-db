@@ -14,8 +14,8 @@ protected:
 
     void SetUp() override {
         std::memset(page, 0, sizeof(page));
-        SlottedPage::Init(page);
-        sp = SlottedPage::FromBuffer(page);
+        SlottedPage::Init(page, 0);
+        sp = SlottedPage::FromBuffer(page, 0);
     }
 };
 
