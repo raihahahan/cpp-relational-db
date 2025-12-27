@@ -18,15 +18,21 @@ concept CatalogCodec =
 template <typename Row, typename Codec>
 requires CatalogCodec<Row, Codec>
 class CatalogTable {
+    static_assert(!std::is_trivially_copyable_v<Row>,
+        "Catalog rows must use explicit codecs, not memcpy");
 public:
-    explicit CatalogTable(HeapFile hf) : _hf{std::move(hf)} {};
-    void Insert(const Row& row) {
+    explicit CatalogTable(HeapFile* hf) : _hf{hf} {};
+    std::optional<db::access::RID> Insert(const Row& row) {
         auto bytes = Codec::Encode(row);
-        _hf.Insert(bytes.data(), bytes.size());
+        auto rid = _hf->Insert(bytes.data(), bytes.size());
+        return rid;
+    }
+    page_id_t GetFirstPage() const {
+        return _hf->GetPageId();
     }
 
-private:
-    HeapFile _hf;
+protected:
+    HeapFile* _hf;
 };
 }
 
