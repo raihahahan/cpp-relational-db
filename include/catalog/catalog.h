@@ -1,11 +1,10 @@
 #pragma once
 
-#include <string>
-#include <vector>
 #include <optional>
-#include <unordered_map>
-#include "access/heap/heap_file.h"
-#include "access/record.h"
+#include <vector>
+#include <string>
+#include "catalog/catalog_types.h"
+#include "catalog/catalog_tables.h"
 #include "catalog/catalog_bootstrap.h"
 
 /*
@@ -55,45 +54,16 @@ on create table:
 
 namespace db::catalog {
 
-// catalog metadata
-struct DatabaseInfo {
-    db_id_t db_id;
-    std::string db_name;
-};
-
-struct TableInfo {
-    table_id_t table_id;
-    db_id_t db_id;
-    std::string table_name;
-    file_id_t heap_file_id;
-    page_id_t first_page_id;
-};
-
-struct ColumnInfo {
-    table_id_t table_id;
-    col_id_t col_id;
-    std::string col_name;
-    type_id_t type_id;
-    int ordinal_position;
-};
-
-struct TypeInfo {
-    type_id_t type_id;
-    int size;
-};
-
-using HeapFile = db::access::HeapFile;
-
 class Catalog {
 public:
-    explicit Catalog(BufferManager* bm, DiskManager* dm);
-    // create catalog heap files and insert catalog metadata
-    void Init();
+    explicit Catalog(db::storage::BufferManager* bm,
+                     db::storage::DiskManager* dm);
 
-    // db operations
+    void Init();
+    
+    // database operations
     db_id_t CreateDatabase(const std::string& db_name);
     std::optional<DatabaseInfo> GetDatabase(const std::string& db_name) const;
-    bool DeleteDatabase(const std::string& db_name);
 
     // table operations
     table_id_t CreateTable(
@@ -108,43 +78,29 @@ public:
     ) const;
 
     std::vector<ColumnInfo> GetTableColumns(table_id_t table_id) const;
-
-    bool AlterTable(db_id_t db_id, const std::string& table_name);
-
-    bool DeleteTable(db_id_t db_id, const std::string& table_name);
-
-    // row operations
-    bool InsertRow(db_id_t db_id, const std::string& table_name,
-                    const std::vector<ColumnInfo>& columns);
-
-    bool UpdateRow(db_id_t db_id, const std::string& table_name,
-                    const std::vector<ColumnInfo>& columns);
-
+    
     // type operations
     std::optional<TypeInfo> GetType(type_id_t type_id) const;
 
-    // bootstrapping
-    bool IsInitialised();
-    void LoadCatalogs(db_id_t db_id = DEFAULT_DB_ID);
-    void BootstrapCatalogs();
-    void InsertBuiltinTypes();
-    void InsertCatalogMetadata();
-    
 private:
+    // bootstrap
+    bool IsInitialised() const;
+    void LoadCatalogs();
+    void BootstrapCatalogs();
+
+    // id allocators
     db_id_t AllocateDatabaseId();
     table_id_t AllocateTableId();
-    type_id_t AllocateTypeId();
     col_id_t AllocateColId();
+    type_id_t AllocateTypeId();
 
 private:
-    BufferManager* _bm;
-    DiskManager* _dm;
+    db::storage::BufferManager* _bm;
+    db::storage::DiskManager* _dm;
 
-    // catalog heap files
-    std::optional<HeapFile> _db_databases;
-    std::optional<HeapFile> _db_tables;
-    std::optional<HeapFile> _db_attributes;
-    std::optional<HeapFile> _db_types;
+    std::optional<DatabasesCatalog> _databases;
+    std::optional<TablesCatalog> _tables;
+    std::optional<AttributesCatalog> _attributes;
+    std::optional<TypesCatalog> _types;
 };
-
 }
