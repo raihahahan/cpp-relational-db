@@ -79,20 +79,20 @@ public:
 
     std::vector<ColumnInfo> GetTableColumns(table_id_t table_id) const;
     
-    // type operations
-    std::optional<TypeInfo> GetType(type_id_t type_id) const;
-
 private:
     // bootstrap
     bool IsInitialised() const;
-    void LoadCatalogs();
+    void LoadCatalogs(db_id_t db_id = DEFAULT_DB_ID);
     void BootstrapCatalogs();
+    void InsertBuiltinTypes();
+    void InsertCatalogMetadata();
 
     // id allocators
     db_id_t AllocateDatabaseId();
     table_id_t AllocateTableId();
     col_id_t AllocateColId();
     type_id_t AllocateTypeId();
+    file_id_t AllocateFileId();
 
 private:
     db::storage::BufferManager* _bm;
