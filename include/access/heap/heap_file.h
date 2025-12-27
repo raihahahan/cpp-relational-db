@@ -27,6 +27,7 @@ public:
                         DiskManager* dm,
                         file_id_t file_id, 
                         page_id_t first_page_id);
+    HeapFile() = default;
     
     std::optional<RID> Insert(const char* data, size_t len);
     std::optional<Record> Get(const RID& rid);
@@ -39,6 +40,15 @@ public:
     // iterator
     HeapIterator begin();   
     HeapIterator end();
+
+    // factory
+    static HeapFile Create(BufferManager* bm,
+                            DiskManager* dm,
+                            file_id_t fid);
+    static HeapFile Open(BufferManager* bm,
+                            DiskManager* dm,
+                            file_id_t fid,
+                            page_id_t first_page_id);
 
 private:
     void InitHeapPage(char* raw_page_data);

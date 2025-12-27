@@ -1,6 +1,7 @@
 #include "access/heap/heap_file.h"
 #include "storage/page/slotted_page.h"
 #include "storage/buffer_manager/frame.h"
+#include "config/config.h"
 
 using SlottedPage = db::storage::SlottedPage;
 using Frame = db::storage::Frame;
@@ -165,5 +166,25 @@ HeapIterator& HeapIterator::operator++() {
     _curr_slot++;
     Advance();
     return *this;
+}
+
+HeapFile HeapFile::Create(BufferManager* bm, 
+                            DiskManager* dm, 
+                            file_id_t fid) {
+    page_id_t pid = dm->AllocatePage();
+    Frame* frame = bm->request(pid);
+    HeapFile hf{bm, dm, fid, pid};
+    hf.InitHeapPage(frame->data);
+    bm->mark_dirty(frame);
+    bm->release(pid);
+
+    return hf;
+}
+
+HeapFile HeapFile::Open(BufferManager* bm, 
+                            DiskManager* dm, 
+                            file_id_t fid,
+                            page_id_t first_page_id) {
+    return HeapFile{bm, dm, fid, first_page_id};
 }
 }
