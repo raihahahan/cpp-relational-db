@@ -36,6 +36,7 @@ public:
 
     // accessor
     BufferManager* GetBm() const;
+    page_id_t GetPageId() const { return _first_page_id; };
 
     // iterator
     HeapIterator begin();   

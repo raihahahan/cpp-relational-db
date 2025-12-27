@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <optional>
 #include <span>
+#include <utility>
 
 namespace db::storage {
 using page_id_t = int32_t;
@@ -33,7 +34,7 @@ public:
     
     // modifiers
     std::optional<uint16_t> Insert(const char* data, std::size_t len);
-    std::optional<std::span<const char>> Get(uint16_t slot_id);
+    std::optional<std::pair<std::span<const char>, uint16_t>> Get(uint16_t slot_id);
     bool Update(uint16_t slot_id, const char* new_data, std::size_t len);
     bool Delete(uint16_t slot_id);
 

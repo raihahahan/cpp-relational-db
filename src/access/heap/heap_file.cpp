@@ -34,7 +34,7 @@ std::optional<Record> HeapFile::Get(const RID& rid) {
     _bm->release(rid.page_id);
 
     if (data.has_value()) {
-        return Record{rid, (*data).data()};
+        return Record{rid, (*data).first.data(), (*data).second };
     }
     
     return std::nullopt;
@@ -57,6 +57,7 @@ std::optional<RID> HeapFile::Insert(const char* data, size_t len) {
     while (page_id != INVALID_PAGE_ID) {
         Frame* frame = _bm->request(page_id);
         auto sp = SlottedPage::FromBuffer(frame->data, sizeof(HeapPageHeader));
+
         auto slot_id = sp.Insert(data, len);
         if (slot_id.has_value()) {
             _bm->mark_dirty(frame);

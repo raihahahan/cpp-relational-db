@@ -44,8 +44,8 @@ TEST_F(SlottedPageTest, InsertAndGetSingleRecord) {
     auto result = sp.Get(*slot);
     ASSERT_TRUE(result.has_value());
 
-    EXPECT_EQ(result->size(), sizeof(data));
-    EXPECT_EQ(std::memcmp(result->data(), data, sizeof(data)), 0);
+    EXPECT_EQ(result.value().second, sizeof(data));
+    EXPECT_EQ(std::memcmp(result.value().first.data(), data, sizeof(data)), 0);
 }
 
 TEST_F(SlottedPageTest, MultipleInsertsWork) {
@@ -61,9 +61,9 @@ TEST_F(SlottedPageTest, MultipleInsertsWork) {
     ASSERT_TRUE(s2.has_value());
     ASSERT_TRUE(s3.has_value());
 
-    EXPECT_EQ(std::memcmp(sp.Get(*s1)->data(), a, sizeof(a)), 0);
-    EXPECT_EQ(std::memcmp(sp.Get(*s2)->data(), b, sizeof(b)), 0);
-    EXPECT_EQ(std::memcmp(sp.Get(*s3)->data(), c, sizeof(c)), 0);
+    EXPECT_EQ(std::memcmp(sp.Get(*s1)->first.data(), a, sizeof(a)), 0);
+    EXPECT_EQ(std::memcmp(sp.Get(*s2)->first.data(), b, sizeof(b)), 0);
+    EXPECT_EQ(std::memcmp(sp.Get(*s3)->first.data(), c, sizeof(c)), 0);
 }
 
 // ----------------------------
@@ -98,8 +98,8 @@ TEST_F(SlottedPageTest, UpdateInPlaceWhenSmaller) {
     auto result = sp.Get(*slot);
     ASSERT_TRUE(result.has_value());
 
-    EXPECT_EQ(result->size(), sizeof(new_data));
-    EXPECT_EQ(std::memcmp(result->data(), new_data, sizeof(new_data)), 0);
+    EXPECT_EQ(result->second, sizeof(new_data));
+    EXPECT_EQ(std::memcmp(result->first.data(), new_data, sizeof(new_data)), 0);
 }
 
 TEST_F(SlottedPageTest, UpdateRelocatesWhenLarger) {
@@ -114,8 +114,8 @@ TEST_F(SlottedPageTest, UpdateRelocatesWhenLarger) {
     auto result = sp.Get(*slot);
     ASSERT_TRUE(result.has_value());
 
-    EXPECT_EQ(result->size(), sizeof(large));
-    EXPECT_EQ(std::memcmp(result->data(), large, sizeof(large)), 0);
+    EXPECT_EQ(result->second, sizeof(large));
+    EXPECT_EQ(std::memcmp(result->first.data(), large, sizeof(large)), 0);
 }
 
 // ----------------------------

@@ -1,6 +1,5 @@
 #include "storage/page/slotted_page.h"
 #include "config/config.h"
-#include <optional>
 
 namespace db::storage {
 
@@ -77,17 +76,19 @@ std::optional<uint16_t> SlottedPage::Insert(const char* data, std::size_t len) {
     return slot_id;
 };
 
-std::optional<std::span<const char>> SlottedPage::Get(uint16_t slot_id) {
+std::optional<std::pair<std::span<const char>, uint16_t>> SlottedPage::Get(uint16_t slot_id) {
     auto* header = GetHeader();
     // check if slot is valid
-    if (slot_id >= header->num_slots) return std::nullopt;
+    if (slot_id >= header->num_slots) { 
+        return std::nullopt;
+    }
 
     auto* slot = GetSlot(slot_id);
     if (slot->length == 0) {
         return std::nullopt; // deleted
     }
 
-    return std::span<const char>(_data + slot->offset, slot->length);
+    return std::make_pair(std::span<const char>(_data + slot->offset, slot->length), slot->length);
 };
 
 bool SlottedPage::Update(uint16_t slot_id, const char* new_data, std::size_t len) {
