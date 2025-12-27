@@ -39,6 +39,7 @@ struct ColumnInfo {
 struct TypeInfo {
     type_id_t type_id;
     uint16_t size;
+    std::string type_name;
 };
 
 }
