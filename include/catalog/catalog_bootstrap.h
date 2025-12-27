@@ -13,10 +13,18 @@ constexpr file_id_t DB_TYPES_FILE_ID = 4;
 
 // DB ID
 constexpr db_id_t DEFAULT_DB_ID = 1;
+constexpr std::string DEFAULT_DB_NAME = "DB";
 
 // TABLE NAMES
 constexpr std::string DB_DATABASES_TABLE = "db_databases";
 constexpr std::string DB_TABLES_TABLE = "db_tables";
 constexpr std::string DB_ATTRIBUTES_TABLE = "db_attributes";
 constexpr std::string DB_TYPES_TABLE = "db_types";
+
+// TABLE ID
+constexpr table_id_t DB_DATABASES_TABLE_ID = 1;
+constexpr table_id_t DB_TABLES_TABLE_ID = 2;
+constexpr table_id_t DB_ATTRIBUTES_TABLE_ID = 3;
+constexpr table_id_t DB_TYPES_TABLE_ID = 4;
+
 }
