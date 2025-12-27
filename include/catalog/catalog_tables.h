@@ -42,6 +42,6 @@ public:
     using Base = CatalogTable<TypeInfo, codec::TypeInfoCodec>;
     using Base::Base;
 
-    std::vector<TypeInfo> GetColumns(table_id_t table_id) const;
+    std::vector<TypeInfo> GetTypes() const;
 };
 }
