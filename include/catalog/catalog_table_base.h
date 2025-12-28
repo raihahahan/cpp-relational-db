@@ -21,18 +21,20 @@ class CatalogTable {
     static_assert(!std::is_trivially_copyable_v<Row>,
         "Catalog rows must use explicit codecs, not memcpy");
 public:
-    explicit CatalogTable(HeapFile* hf) : _hf{hf} {};
+    explicit CatalogTable(HeapFile hf) : _hf{std::move(hf)} {};
     std::optional<db::access::RID> Insert(const Row& row) {
         auto bytes = Codec::Encode(row);
-        auto rid = _hf->Insert(bytes.data(), bytes.size());
+        auto rid = _hf.Insert(
+                    reinterpret_cast<const char*>(bytes.data()),
+                    bytes.size());
         return rid;
     }
     page_id_t GetFirstPage() const {
-        return _hf->GetPageId();
+        return _hf.GetPageId();
     }
 
 protected:
-    HeapFile* _hf;
+    HeapFile _hf;
 };
 }
 
