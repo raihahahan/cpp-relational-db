@@ -30,6 +30,14 @@ add_library(main
     src/server/server.cpp
 )
 
+# Disk Manager
+add_executable(dm 
+    src/storage/disk_manager/main.cpp
+    src/storage/disk_manager/disk_manager.cpp)
+target_include_directories(dm PUBLIC
+        ${PROJECT_SOURCE_DIR}/include
+)
+
 target_include_directories(main PUBLIC
     ${PROJECT_SOURCE_DIR}/include
 )
