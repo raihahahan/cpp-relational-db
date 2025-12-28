@@ -1,24 +1,8 @@
 #include "catalog/catalog_codec.h"
 
 namespace db::catalog::codec {
-std::vector<uint8_t> DatabaseInfoCodec::Encode(const DatabaseInfo& row) {
-    std::vector<uint8_t> buf;
-    util::WriteInt(buf, row.db_id);
-    util::WriteString(buf, row.db_name);
-    return buf;
-}
-
-DatabaseInfo DatabaseInfoCodec::Decode(std::span<const uint8_t> bytes) {
-    size_t off = 0;
-    DatabaseInfo info;
-    info.db_id = util::ReadInt<db_id_t>(bytes, off);
-    info.db_name = util::ReadString(bytes, off);
-    return info;
-}
-
 std::vector<uint8_t> TableInfoCodec::Encode(const TableInfo& row) {
     std::vector<uint8_t> buf;
-    util::WriteInt(buf, row.db_id);
     util::WriteInt(buf, row.first_page_id);
     util::WriteInt(buf, row.heap_file_id);
     util::WriteInt(buf, row.table_id);
@@ -29,11 +13,11 @@ std::vector<uint8_t> TableInfoCodec::Encode(const TableInfo& row) {
 TableInfo TableInfoCodec::Decode(std::span<const uint8_t> bytes) {
     TableInfo t;
     size_t off = 0;
-    t.db_id = util::ReadInt<db_id_t>(bytes, off);
     t.first_page_id = util::ReadInt<page_id_t>(bytes, off);
     t.heap_file_id = util::ReadInt<file_id_t>(bytes, off);
     t.table_id = util::ReadInt<table_id_t>(bytes, off);
     t.table_name = util::ReadString(bytes, off);
+    return t;
 }
 
 std::vector<uint8_t> ColumnInfoCodec::Encode(const ColumnInfo& row) {
@@ -62,6 +46,7 @@ std::vector<uint8_t> TypeInfoCodec::Encode(const TypeInfo& row) {
     util::WriteInt(buf, row.type_id);
     util::WriteInt(buf, row.size);
     util::WriteString(buf, row.type_name);
+    return buf;
 }
 
 TypeInfo TypeInfoCodec::Decode(std::span<const uint8_t> bytes) {
