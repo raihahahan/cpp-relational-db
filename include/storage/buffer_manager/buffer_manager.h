@@ -16,13 +16,13 @@ public:
     void release(page_id_t pid);
     void mark_dirty(Frame* frame);
     void flush_all();
+    void pin(Frame* f);
+    void unpin(Frame* f);
 
 private:
     Frame* evict();
     void read(page_id_t pid, Frame* f);
     void flush(Frame* f);
-    void pin(Frame* f);
-    void unpin(Frame* f);
 
     std::unordered_map<page_id_t, Frame*> page_table_;
     std::vector<Frame> pool_;
