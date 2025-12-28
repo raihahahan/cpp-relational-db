@@ -5,7 +5,7 @@
 #include <cstdint>
 #include "catalog/catalog_types.h"
 
-namespace db::catalog::codec::util {
+namespace db::catalog::codec::utilities {
 template <typename T>
 concept FixedWidthSerializable = 
     std::is_trivially_copyable_v<T> &&
@@ -36,7 +36,7 @@ inline T ReadInt(std::span<const uint8_t> buf, size_t& off) {
 inline std::string ReadString(std::span<const uint8_t> buf, 
                                 size_t& off) {
     auto len = ReadInt<uint32_t>(buf, off);
-    std::string s(reinterpret_cast<const char*>(buf.data()), len);
+    std::string s(reinterpret_cast<const char*>(buf.data() + off), len);
     off += len;
     return s;
 };
