@@ -57,7 +57,7 @@ public:
     // table operations
     table_id_t CreateTable(
         const std::string& table_name,
-        const std::vector<ColumnInfo>& columns
+        const std::vector<RawColumnInfo>& columns
     );
 
     std::optional<TableInfo> LookupTable(
