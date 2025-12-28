@@ -7,13 +7,14 @@
 #include "storage/disk_manager/disk_manager.h"
 #include "storage/page/slotted_page.h"
 #include "access/heap/heap_iterator.h"
+#include "config/config.h"
 
 #define INVALID_PAGE_ID -1
 using BufferManager = db::storage::BufferManager;
 using DiskManager = db::storage::DiskManager;
 
 namespace db::access {
-using file_id_t = uint16_t;
+using file_id_t = config::uuid_t;
 using page_id_t = db::storage::page_id_t;
 
 struct alignas(8) HeapPageHeader {

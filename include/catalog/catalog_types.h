@@ -4,13 +4,14 @@
 #include <cstdint>
 #include "access/heap/heap_file.h"
 #include "storage/page/slotted_page.h"
+#include "config/config.h"
 
 namespace db::catalog {
 
 // ids
-using table_id_t = uint32_t;
-using col_id_t = uint32_t;
-using type_id_t = uint32_t;
+using table_id_t = config::uuid_t;
+using col_id_t = config::uuid_t;
+using type_id_t = config::uuid_t;
 using file_id_t = db::access::file_id_t;
 using page_id_t = db::storage::page_id_t;
 

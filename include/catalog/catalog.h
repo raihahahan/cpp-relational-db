@@ -6,6 +6,7 @@
 #include "catalog/catalog_types.h"
 #include "catalog/catalog_tables.h"
 #include "catalog/catalog_bootstrap.h"
+#include "util/uuid.h"
 
 /*
 catalogs:
@@ -71,12 +72,6 @@ public:
     void BootstrapCatalogs();
     void InsertBuiltinTypes();
     void InsertCatalogMetadata();
-
-    // id allocators
-    table_id_t AllocateTableId();
-    col_id_t AllocateColId();
-    type_id_t AllocateTypeId();
-    file_id_t AllocateFileId();
 
 private:
     db::storage::BufferManager* _bm;
