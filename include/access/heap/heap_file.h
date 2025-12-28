@@ -50,9 +50,10 @@ public:
                             DiskManager* dm,
                             file_id_t fid,
                             page_id_t first_page_id);
+    
+    static void InitHeapPage(char* raw_page_data);
 
 private:
-    void InitHeapPage(char* raw_page_data);
     BufferManager* _bm;
     DiskManager* _dm;
     file_id_t _file_id;
