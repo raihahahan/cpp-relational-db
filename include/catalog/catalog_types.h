@@ -11,7 +11,7 @@ namespace db::catalog {
 // ids
 using table_id_t = config::uuid_t;
 using col_id_t = config::uuid_t;
-using type_id_t = config::uuid_t;
+using type_id_t = uint32_t;
 using file_id_t = db::access::file_id_t;
 using page_id_t = db::storage::page_id_t;
 
@@ -20,6 +20,13 @@ struct TableInfo {
     std::string table_name;
     file_id_t heap_file_id;
     page_id_t first_page_id;
+};
+
+struct RawColumnInfo {
+    col_id_t col_id;
+    std::string col_name;
+    type_id_t type_id;
+    uint16_t ordinal_position;
 };
 
 struct ColumnInfo {
