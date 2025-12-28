@@ -7,7 +7,9 @@
 #include "storage/disk_manager/idisk_manager.h"
 
 namespace db::storage {
-
+struct DBHeaderPage {
+    uint32_t magic; // magic number to indicate db is initialised
+};
 class DiskManager : public IDiskManager {
 public:
     explicit DiskManager(const std::string &db_file);
