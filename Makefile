@@ -45,6 +45,9 @@ test_heap_file:
 test_heap_iterator:
 	@cd $(BUILD_DIR) && ./test_heap_iterator
 
+test_catalog:
+	@cd $(BUILD_DIR) && ./test_catalog && ./test_catalog_codec && ./test_catalog_tables
+
 .PHONY: clean
 clean:
 	@rm -rf $(BUILD_DIR)

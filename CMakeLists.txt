@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.14)
 project(PostgresClone LANGUAGES CXX)
 
+set(CMAKE_BUILD_TYPE Debug)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -11,7 +12,6 @@ FetchContent_Declare(
   googletest
   URL https://github.com/google/googletest/archive/refs/tags/v1.15.2.zip
 )
-set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
 enable_testing()
@@ -30,34 +30,33 @@ add_library(main
     src/server/server.cpp
 )
 
-# PUBLIC headers for library consumers
 target_include_directories(main PUBLIC
     ${PROJECT_SOURCE_DIR}/include
+)
+
+# ASAN on main library
+target_compile_options(main PRIVATE
+    -fsanitize=address
+    -fno-omit-frame-pointer
+)
+target_link_options(main PRIVATE
+    -fsanitize=address
 )
 
 # --------------------------------------------------------------
 # Tests under tests/*/*
 # --------------------------------------------------------------
 file(GLOB_RECURSE TEST_SOURCES
-    ${PROJECT_SOURCE_DIR}/tests/*/*/*.cpp
+    ${PROJECT_SOURCE_DIR}/tests/**/*.cpp
 )
-
-message(STATUS "Found test files:")
-foreach(test_src ${TEST_SOURCES})
-    message(STATUS "  ${test_src}")
-endforeach()
 
 include(GoogleTest)
 foreach(test_src ${TEST_SOURCES})
 
-    # extract test name from filename (without extension)
     get_filename_component(test_name ${test_src} NAME_WE)
 
     add_executable(${test_name} ${test_src})
 
-    # tests need access to:
-    # - include/ (public API)
-    # - tests/   (mock headers)
     target_include_directories(${test_name} PRIVATE
         ${PROJECT_SOURCE_DIR}/include
         ${PROJECT_SOURCE_DIR}/tests
@@ -68,7 +67,15 @@ foreach(test_src ${TEST_SOURCES})
         GTest::gtest_main
     )
 
-    # register tests
-    gtest_discover_tests(${test_name})
+    # ASAN on test binaries
+    target_compile_options(${test_name} PRIVATE
+        -fsanitize=address
+        -fno-omit-frame-pointer
+    )
+    target_link_options(${test_name} PRIVATE
+        -fsanitize=address
+    )
+
+    add_test(NAME ${test_name} COMMAND ${test_name})
 
 endforeach()
