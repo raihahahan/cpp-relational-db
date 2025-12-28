@@ -50,8 +50,8 @@ TEST_F(CatalogTest, BootstrapInitialisesCatalog) {
 
     // catalog tables should exist
     auto tables = catalog->LookupTable(DB_TABLES_TABLE);
-    auto attrs  = catalog->LookupTable(DB_ATTRIBUTES_TABLE);
-    auto types  = catalog->LookupTable(DB_TYPES_TABLE);
+    auto attrs = catalog->LookupTable(DB_ATTRIBUTES_TABLE);
+    auto types = catalog->LookupTable(DB_TYPES_TABLE);
 
     EXPECT_TRUE(tables.has_value());
     EXPECT_TRUE(attrs.has_value());
@@ -85,13 +85,12 @@ TEST_F(CatalogTest, RestartLoadsCatalog) {
 TEST_F(CatalogTest, CreateTableInsertsMetadata) {
     catalog->Init();
 
-    std::vector<ColumnInfo> cols = {
-        { util::GenerateUUID(), util::GenerateUUID(), "id",   1, 1 },
-        { util::GenerateUUID(), util::GenerateUUID(), "name", 2, 2 }
+    std::vector<RawColumnInfo> cols = {
+        { util::GenerateUUID(), "id", INT_TYPE, 1 },
+        { util::GenerateUUID(), "name", TEXT_TYPE, 2 }
     };
 
     auto table_id = catalog->CreateTable("users", cols);
-
     auto table = catalog->LookupTable("users");
     ASSERT_TRUE(table.has_value());
 
@@ -102,14 +101,13 @@ TEST_F(CatalogTest, CreateTableInsertsMetadata) {
 TEST_F(CatalogTest, TableColumnsArePersisted) {
     catalog->Init();
 
-    std::vector<ColumnInfo> cols = {
-        { util::GenerateUUID(), util::GenerateUUID(), "id",   1, 1 },
-        { util::GenerateUUID(), util::GenerateUUID(), "name", 2, 2 },
-        { util::GenerateUUID(), util::GenerateUUID(), "age",  1, 3 }
+    std::vector<RawColumnInfo> cols = {
+        { util::GenerateUUID(), "id", INT_TYPE, 1 },
+        { util::GenerateUUID(), "name", TEXT_TYPE, 2 },
+        { util::GenerateUUID(), "age", INT_TYPE, 3 }
     };
 
     auto table_id = catalog->CreateTable("people", cols);
-
     auto stored_cols = catalog->GetTableColumns(table_id);
 
     ASSERT_EQ(stored_cols.size(), 3);
