@@ -1,14 +1,14 @@
 #include "access/heap/heap_file.h"
 #include "storage/buffer_manager/replacement_policies/replacement.h"
 #include <gtest/gtest.h>
-
+#include "util/uuid.h"
 namespace db::access {
 
 TEST(HeapFileTest, InsertAndGet) {
     DiskManager dm("heap_file_insert_get.db");
     BufferManager bm(db::storage::ReplacementPolicyType::CLOCK, &dm);
 
-    HeapFile hf(&bm, &dm, 1, INVALID_PAGE_ID);
+    HeapFile hf(&bm, &dm, util::GenerateUUID(), INVALID_PAGE_ID);
 
     auto rid = hf.Insert("hello", 6);
     ASSERT_TRUE(rid.has_value());
@@ -22,7 +22,7 @@ TEST(HeapFileTest, UpdateRecord) {
     DiskManager dm("heap_file_update.db");
     BufferManager bm(db::storage::ReplacementPolicyType::CLOCK, &dm);
 
-    HeapFile hf(&bm, &dm, 1, INVALID_PAGE_ID);
+    HeapFile hf(&bm, &dm, util::GenerateUUID(), INVALID_PAGE_ID);
 
     auto rid = hf.Insert("foo", 4).value();
     ASSERT_TRUE(hf.Update("bar", 4, rid));
@@ -36,7 +36,7 @@ TEST(HeapFileTest, DeleteRecord) {
     DiskManager dm("heap_file_delete.db");
     BufferManager bm(db::storage::ReplacementPolicyType::CLOCK, &dm);
 
-    HeapFile hf(&bm, &dm, 1, INVALID_PAGE_ID);
+    HeapFile hf(&bm, &dm, util::GenerateUUID(), INVALID_PAGE_ID);
 
     auto rid = hf.Insert("foo", 4).value();
     ASSERT_TRUE(hf.Delete(rid));
@@ -49,7 +49,7 @@ TEST(HeapFileTest, MultiPageInsert) {
     DiskManager dm("heap_file_multipage.db");
     BufferManager bm(db::storage::ReplacementPolicyType::CLOCK, &dm);
 
-    HeapFile hf(&bm, &dm, 1, INVALID_PAGE_ID);
+    HeapFile hf(&bm, &dm, util::GenerateUUID(), INVALID_PAGE_ID);
 
     const int N = 1000;
     for (int i = 0; i < N; i++) {

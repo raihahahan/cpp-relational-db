@@ -12,5 +12,6 @@ struct RID {
 struct Record {
     RID rid;
     const char* data;
+    size_t size;
 };
 }

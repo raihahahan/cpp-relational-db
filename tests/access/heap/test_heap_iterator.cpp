@@ -4,13 +4,14 @@
 #include <gtest/gtest.h>
 #include <vector>
 #include <string>
+#include "util/uuid.h"
 
 namespace db::access {
 TEST(HeapIteratorTest, EmptyHeap) {
     DiskManager dm("heap_iter_empty.db");
     BufferManager bm(db::storage::ReplacementPolicyType::CLOCK, &dm);
 
-    HeapFile hf(&bm, &dm, 1, INVALID_PAGE_ID);
+    HeapFile hf(&bm, &dm, util::GenerateUUID(), INVALID_PAGE_ID);
 
     auto it = hf.begin();
     ASSERT_FALSE(it.HasNext());
@@ -20,7 +21,7 @@ TEST(HeapIteratorTest, SequentialScanSinglePage) {
     DiskManager dm("heap_iter_single.db");
     BufferManager bm(db::storage::ReplacementPolicyType::CLOCK, &dm);
 
-    HeapFile hf(&bm, &dm, 1, INVALID_PAGE_ID);
+    HeapFile hf(&bm, &dm, util::GenerateUUID(), INVALID_PAGE_ID);
 
     std::vector<std::string> expected;
     for (int i = 0; i < 10; i++) {
@@ -46,7 +47,7 @@ TEST(HeapIteratorTest, SequentialScanMultiPage) {
     DiskManager dm("heap_iter_multi.db");
     BufferManager bm(db::storage::ReplacementPolicyType::CLOCK, &dm);
 
-    HeapFile hf(&bm, &dm, 1, INVALID_PAGE_ID);
+    HeapFile hf(&bm, &dm, util::GenerateUUID(), INVALID_PAGE_ID);
 
     const int N = 500;
     for (int i = 0; i < N; i++) {
@@ -70,7 +71,7 @@ TEST(HeapIteratorTest, SkipDeletedRecords) {
     DiskManager dm("heap_iter_delete.db");
     BufferManager bm(db::storage::ReplacementPolicyType::CLOCK, &dm);
 
-    HeapFile hf(&bm, &dm, 1, INVALID_PAGE_ID);
+    HeapFile hf(&bm, &dm, util::GenerateUUID(), INVALID_PAGE_ID);
 
     auto r1 = hf.Insert("a", 2).value();
     auto r2 = hf.Insert("b", 2).value();
@@ -94,7 +95,7 @@ TEST(HeapIteratorTest, EvictionStress) {
     DiskManager dm("heap_iter_eviction.db");
     BufferManager bm(db::storage::ReplacementPolicyType::CLOCK, &dm);
 
-    HeapFile hf(&bm, &dm, 1, INVALID_PAGE_ID);
+    HeapFile hf(&bm, &dm, util::GenerateUUID(), INVALID_PAGE_ID);
 
     const int N = 2000;
     for (int i = 0; i < N; i++) {
