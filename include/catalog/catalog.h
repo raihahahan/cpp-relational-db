@@ -65,7 +65,6 @@ public:
 
     std::vector<ColumnInfo> GetTableColumns(table_id_t table_id);
     
-private:
     // bootstrap
     bool IsInitialised() const;
     void LoadCatalogs();
