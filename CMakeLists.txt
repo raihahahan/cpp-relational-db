@@ -24,6 +24,10 @@ add_library(main
     src/storage/page/slotted_page.cpp
     src/access/heap/heap_file.cpp
     src/access/heap/heap_iterator.cpp
+    src/catalog/catalog_codec.cpp
+    src/catalog/catalog_tables.cpp
+    src/catalog/catalog.cpp
+    src/server/server.cpp
 )
 
 # PUBLIC headers for library consumers
