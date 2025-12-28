@@ -38,4 +38,10 @@ constexpr page_id_t DB_TABLES_ROOT_PAGE_ID = 1;
 constexpr page_id_t DB_ATTRIBUTES_ROOT_PAGE_ID = 2;
 constexpr page_id_t DB_TYPES_ROOT_PAGE_ID = 3;
 
+// TYPE IDS and data
+constexpr type_id_t INT_TYPE = 1;
+constexpr uint16_t INT_SIZE = 4;
+constexpr type_id_t TEXT_TYPE = 2;
+constexpr uint16_t TEXT_SIZE = -1; // varlen
+
 }
