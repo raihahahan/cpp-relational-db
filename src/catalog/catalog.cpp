@@ -53,10 +53,6 @@ bool Catalog::IsInitialised() const {
 }
 
 void Catalog::LoadCatalogs() {
-    auto tables_info = LookupTable(DB_TABLES_TABLE);
-    auto attributes_info = LookupTable(DB_ATTRIBUTES_TABLE);
-    auto types_info = LookupTable(DB_TYPES_TABLE);
-
     auto table_hf = HeapFile::Open(
         _bm, 
         _dm, 
