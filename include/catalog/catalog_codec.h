@@ -43,12 +43,6 @@ inline std::string ReadString(std::span<const uint8_t> buf,
 }
 
 namespace db::catalog::codec {
-
-struct DatabaseInfoCodec {
-    static std::vector<uint8_t> Encode(const DatabaseInfo& row);
-    static DatabaseInfo Decode(std::span<const uint8_t> bytes);
-};
-
 struct TableInfoCodec {
     static std::vector<uint8_t> Encode(const TableInfo& row);
     static TableInfo Decode(std::span<const uint8_t> bytes);
