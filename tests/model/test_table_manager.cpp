@@ -37,14 +37,8 @@ TEST_F(TableManagerTest, OpenTableAndCacheTest) {
     std::vector<catalog::RawColumnInfo> cols = {
         { id_col_id, "id", catalog::INT_TYPE, 1 }
     };
-    cat->CreateTable("students", cols);
-
-    TableManager manager{
-        cat->GetTablesCatalog(),
-        cat->GetAttributesCatalog(), 
-        bm, 
-        dm
-    };
+    TableManager manager{cat};
+    manager.CreateTable("students", cols);
 
     // test first open (cache miss)
     auto table1 = manager.OpenTable("students");
@@ -63,13 +57,7 @@ TEST_F(TableManagerTest, OpenTableAndCacheTest) {
 }
 
 TEST_F(TableManagerTest, OpenNonExistentTable) {
-    TableManager manager{
-        cat->GetTablesCatalog(), 
-        cat->GetAttributesCatalog(),
-        bm, 
-        dm
-    };
-
+    TableManager manager{cat};
     EXPECT_ANY_THROW(manager.OpenTable("ghost_table"));
 }
 

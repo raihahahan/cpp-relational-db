@@ -77,7 +77,9 @@ public:
     TablesCatalog* GetTablesCatalog() const;
     AttributesCatalog* GetAttributesCatalog() const;
     TypesCatalog* GetTypesCatalog() const;
-
+    db::storage::BufferManager* GetBm() const;
+    db::storage::DiskManager* GetDm() const;
+    
 private:
     db::storage::BufferManager* _bm;
     db::storage::DiskManager* _dm;

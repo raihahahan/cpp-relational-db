@@ -204,4 +204,12 @@ TypesCatalog* Catalog::GetTypesCatalog() const {
     return const_cast<TypesCatalog*>(&(_types.value()));
 }
 
+db::storage::BufferManager* Catalog::GetBm() const {
+    return _bm;
+}
+db::storage::DiskManager* Catalog::GetDm() const {
+    return _dm;
+}
+
+
 }
