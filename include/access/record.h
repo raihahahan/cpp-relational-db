@@ -14,4 +14,11 @@ struct Record {
     const char* data;
     size_t size;
 };
+
+// TODO for MVCC
+// aka TupleHeader
+struct RecordHeader {
+    uint32_t xmin;
+    uint32_t xmax;
+};
 }

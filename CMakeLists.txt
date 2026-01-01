@@ -28,6 +28,10 @@ add_library(main
     src/catalog/catalog_tables.cpp
     src/catalog/catalog.cpp
     src/server/server.cpp
+    src/model/dynamic_codec.cpp
+    src/model/relation.cpp
+    src/model/user_table.cpp
+    src/model/table_manager.cpp
 )
 
 # Disk Manager

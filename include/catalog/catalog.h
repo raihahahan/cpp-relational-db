@@ -73,6 +73,11 @@ public:
     void InsertBuiltinTypes();
     void InsertCatalogMetadata();
 
+    // catalog accessor
+    TablesCatalog* GetTablesCatalog() const;
+    AttributesCatalog* GetAttributesCatalog() const;
+    TypesCatalog* GetTypesCatalog() const;
+
 private:
     db::storage::BufferManager* _bm;
     db::storage::DiskManager* _dm;
