@@ -194,5 +194,14 @@ void Catalog::InsertCatalogMetadata() {
     _attributes.value().Insert({DB_TYPES_TABLE_ID, util::GenerateUUID(), "size", INT_TYPE, 2});
 }
 
+TablesCatalog* Catalog::GetTablesCatalog() const {
+    return const_cast<TablesCatalog*>(&(_tables.value()));
+}
+AttributesCatalog* Catalog::GetAttributesCatalog() const {
+    return const_cast<AttributesCatalog*>(&(_attributes.value()));
+}
+TypesCatalog* Catalog::GetTypesCatalog() const {
+    return const_cast<TypesCatalog*>(&(_types.value()));
+}
 
 }
