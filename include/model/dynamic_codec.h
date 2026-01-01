@@ -8,6 +8,6 @@ struct DynamicCodec {
                             const std::vector<Value>& values,
                             const std::vector<ColumnInfo> schema);
     
-    static Value Decode(std::span<const uint8_t> bytes, const std::vector<ColumnInfo>& schema);
+    static std::vector<Value> Decode(std::span<const uint8_t> bytes, const std::vector<ColumnInfo>& schema);
 };
 }
