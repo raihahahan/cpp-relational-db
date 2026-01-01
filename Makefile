@@ -45,8 +45,17 @@ test_heap_file:
 test_heap_iterator:
 	@cd $(BUILD_DIR) && ./test_heap_iterator
 
+# CATALOG
 test_catalog:
 	@cd $(BUILD_DIR) && ./test_catalog && ./test_catalog_codec && ./test_catalog_tables
+
+# DB SERVER
+test_db_server:
+	@cd $(BUILD_DIR) && ./test_server
+
+# MODEL
+test_model:
+	@cd $(BUILD_DIR) && ./test_table_manager && ./test_user_table && ./test_dynamic_codec
 
 .PHONY: clean
 clean:

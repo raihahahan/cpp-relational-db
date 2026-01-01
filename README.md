@@ -1,26 +1,27 @@
 # C++ Relational Database
 
-This repository implements a mini relational database system in modern C++. It is inspired by PostgreSQL and upon taking [CS3223 (Database Implementations)](https://nusmods.com/courses/CS3223/database-systems-implementation)
+This repository implements a mini relational database system in modern C++. It is inspired by PostgreSQL and upon taking [CS3223 (Database Implementations)](https://nusmods.com/courses/CS3223/database-systems-implementation).
+
+Technical write-up of this project: [Link](https://mraihan.dev/blog/Implementing-a-relational-database-from-scratch---Storage-Layer)
 
 ## Table of Contents
 
 1. [Overview](#overview)
-2. [Architecture](#architecture)
-3. [Getting Started](#getting-started)
-4. [Build & Test](#build--test)
-5. [Project Roadmap](#project-roadmap)
-6. [Repository Structure](#repository-structure)
+2. [Getting Started](#getting-started)
+3. [Build & Test](#build--test)
+4. [Project Roadmap](#project-roadmap)
 
 ## Overview
 
 This database system is built as a layered architecture, where each layer abstracts a specific level of data management:
 
-1. Query Layer: Parses, optimizes, and executes SQL statements.
-2. Execution Layer: Handles query operators (scan, join, aggregate).
-3. Buffer Manager: Caches and manages in-memory pages.
-4. Storage Layer: Reads/writes pages to disk (raw I/O).
-
-Each layer interacts only with the one directly below it, following clean modular boundaries.
+1. Storage Layer: Disk Manager, Buffer Manager, Slotted Page Organisation => raw bytes stored as pages (done)
+2. Access Layer: Heap Files and Heap iteration => API to access pages stored in heap files (done)
+3. Catalog Layer: Creates and provides metadata information for the database (i.e info about tables, attributes, types) (done)
+4. Model Layer: Schema aware layer to create and insert rows into user tables in the database (done)
+5. Query Evaluation Engine: SQL Parser, Query Optimiser, Query Executor, operators
+6. Concurrency Control
+7. Recoverability Manager
 
 Below is a simplified high-level view of the entire system stack:
 
@@ -133,6 +134,8 @@ It provides a lightweight entry point for creating, opening, and deleting databa
 | ------------ | ------------------------------------------------- |
 | **DbServer** | Manages database files and DiskManager instances. |
 
+## Model Layer Overview
+
 ### Responsibilities
 
 - Discover existing databases on startup
@@ -142,6 +145,33 @@ It provides a lightweight entry point for creating, opening, and deleting databa
 - Delete databases safely
 
 For detailed documentation, see the [server/README.md](src/server/README.md).
+
+## Model Layer Overview
+
+The **model layer** acts as the logical bridge between low-level physical storage and high-level database abstractions. It manages how data is structured, aligned in memory, and presented to the system as tables and rows.
+
+| Component        | Description                                                                     |
+| ---------------- | ------------------------------------------------------------------------------- |
+| **TableManager** | Global registry that caches opened table instances and resolves metadata.       |
+| **UserTable**    | Logical handle for a table, enforcing schema and providing a row-based API.     |
+| **DynamicCodec** | Serialisation engine that handles binary encoding with proper memory alignment. |
+| **Relation**     | Base class providing shared physical interaction logic for all relational data. |
+
+### Responsibilities
+
+- **Metadata Orchestration**: Resolves human-readable table names into physical storage IDs using the Catalog.
+- **Schema Enforcement**: Ensures that inserted data matches the types and positions defined in the table schema.
+- **Data Alignment**: Automatically handles padding and alignment for various data types during serialization to ensure architecture compatibility.
+- **Instance Caching**: Manages a shared cache of active tables to prevent redundant file handles and ensure data consistency.
+
+### Data Representation
+
+The model layer uses a flexible variant-based system to represent in-memory values:
+`using Value = std::variant<uint32_t, std::string>;`
+
+When data is persisted, the **DynamicCodec** transforms these variants into a compact, aligned binary format suitable for storage on disk.
+
+For detailed documentation, see the [model/README.md](src/model/README.md).
 
 ## Project Roadmap
 
