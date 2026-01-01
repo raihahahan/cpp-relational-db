@@ -44,4 +44,8 @@ constexpr uint16_t INT_SIZE = 4;
 constexpr type_id_t TEXT_TYPE = 2;
 constexpr uint16_t TEXT_SIZE = -1; // varlen
 
+// ALIGNMENTS
+constexpr uint32_t INT_ALIGNMENT = 4;
+constexpr uint32_t TEXT_ALIGNMENT = 4;
+
 }
