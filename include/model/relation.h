@@ -14,7 +14,7 @@ public:
     explicit Relation(HeapFile hf);
     std::optional<RID> InsertRaw(std::span<const uint8_t> bytes, size_t len);
 
-private:
+protected:
     HeapFile _hf;
 };
 }
