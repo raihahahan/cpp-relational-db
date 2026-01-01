@@ -1,4 +1,7 @@
+#pragma once
+
 #include <optional>
+#include <span>
 #include "access/record.h"
 #include "access/heap/heap_file.h"
 
@@ -9,7 +12,7 @@ namespace db::model {
 class Relation {
 public:
     explicit Relation(HeapFile hf);
-    std::optional<RID> InsertRaw(char* bytes, size_t len);
+    std::optional<RID> InsertRaw(std::span<const uint8_t> bytes, size_t len);
 
 private:
     HeapFile _hf;
