@@ -134,8 +134,6 @@ It provides a lightweight entry point for creating, opening, and deleting databa
 | ------------ | ------------------------------------------------- |
 | **DbServer** | Manages database files and DiskManager instances. |
 
-## Model Layer Overview
-
 ### Responsibilities
 
 - Discover existing databases on startup
