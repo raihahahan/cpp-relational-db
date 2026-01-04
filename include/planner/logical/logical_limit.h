@@ -1,13 +1,15 @@
 #pragma once
 #include "planner/logical/logical_plan.h"
+
 #include <string>
 #include <vector>
 
 namespace db::planner::logical {
-
-class LogicalFilter : public LogicalPlan {
+class LogicalLimit : public LogicalPlan {
 public:
-    LogicalFilter(LogicalPlanPtr child);
+    LogicalLimit(LogicalPlanPtr child, size_t limit);
+
     LogicalPlanPtr child;
+    size_t limit;
 };
 }
