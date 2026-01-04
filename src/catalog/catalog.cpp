@@ -31,7 +31,7 @@ table_id_t Catalog::CreateTable(
                             });
     
     for (const auto& col : columns) {
-        ColumnInfo info{.col_id = col.col_id, 
+        ColumnInfo info{
                         .col_name = col.col_name,
                         .ordinal_position = col.ordinal_position,
                         .table_id = table_id,
@@ -163,10 +163,9 @@ void Catalog::InsertCatalogMetadata() {
         .first_page_id = DB_TABLES_ROOT_PAGE_ID
     });
 
-    _attributes.value().Insert({DB_TABLES_TABLE_ID, util::GenerateUUID(), "table_id", INT_TYPE, 1});
-    _attributes.value().Insert({DB_TABLES_TABLE_ID, util::GenerateUUID(), "table_name", TEXT_TYPE, 2});
-    _attributes.value().Insert({DB_TABLES_TABLE_ID, util::GenerateUUID(), "heap_file_id", INT_TYPE, 3});
-    _attributes.value().Insert({DB_TABLES_TABLE_ID, util::GenerateUUID(), "first_page_id", INT_TYPE, 4});
+    for (const auto& col : TABLES_CATALOG_SCHEMA) {
+        _attributes->Insert(col);
+    }
 
     // db_attributes
     _tables.value().Insert(TableInfo{
@@ -176,11 +175,9 @@ void Catalog::InsertCatalogMetadata() {
         .first_page_id = DB_ATTRIBUTES_ROOT_PAGE_ID
     });
 
-    _attributes.value().Insert({DB_ATTRIBUTES_TABLE_ID, util::GenerateUUID(), "table_id", INT_TYPE, 1});
-    _attributes.value().Insert({DB_ATTRIBUTES_TABLE_ID, util::GenerateUUID(), "col_id", INT_TYPE, 2});
-    _attributes.value().Insert({DB_ATTRIBUTES_TABLE_ID, util::GenerateUUID(), "col_name", TEXT_TYPE, 3});
-    _attributes.value().Insert({DB_ATTRIBUTES_TABLE_ID, util::GenerateUUID(), "type_id", INT_TYPE, 4});
-    _attributes.value().Insert({DB_ATTRIBUTES_TABLE_ID, util::GenerateUUID(), "ordinal_position", INT_TYPE, 5});
+    for (const auto& col : ATTR_CATALOG_SCHEMA) {
+        _attributes->Insert(col);
+    }
 
     // db_types
     _tables.value().Insert(TableInfo{
@@ -190,8 +187,9 @@ void Catalog::InsertCatalogMetadata() {
         .first_page_id = DB_TYPES_ROOT_PAGE_ID
     });
 
-    _attributes.value().Insert({DB_TYPES_TABLE_ID, util::GenerateUUID(), "type_id", INT_TYPE, 1});
-    _attributes.value().Insert({DB_TYPES_TABLE_ID, util::GenerateUUID(), "size", INT_TYPE, 2});
+    for (const auto& col : TYPES_CATALOG_SCHEMA) {
+        _attributes->Insert(col);
+    }
 }
 
 TablesCatalog* Catalog::GetTablesCatalog() const {

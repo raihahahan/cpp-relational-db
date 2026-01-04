@@ -12,11 +12,9 @@ TEST(UserTableTest, BasicInsertFlow) {
     catalog::Catalog* cat = new catalog::Catalog{bm, dm};
 
     cat->Init();
-    auto id_col_id = util::GenerateUUID();
-    auto name_col_id = util::GenerateUUID();
     std::vector<catalog::RawColumnInfo> cols = {
-        { id_col_id, "id", catalog::INT_TYPE, 1 },
-        { name_col_id, "name", catalog::TEXT_TYPE, 2 }
+        { "id", catalog::INT_TYPE, 1 },
+        { "name", catalog::TEXT_TYPE, 2 }
     };
 
     auto table_id = cat->CreateTable("users", cols);
@@ -24,12 +22,12 @@ TEST(UserTableTest, BasicInsertFlow) {
     auto hf = access::HeapFile::Open(bm, dm, table->heap_file_id, table->first_page_id);
 
     std::vector<catalog::ColumnInfo> schema = {
-        { table_id, id_col_id, "id", catalog::INT_TYPE, 1 },
-        { table_id, name_col_id, "name", catalog::TEXT_TYPE, 2 }
+        { table_id, "id", catalog::INT_TYPE, 1 },
+        { table_id, "name", catalog::TEXT_TYPE, 2 }
     };
     UserTable user_table{hf, schema, table_id};
     std::string name = "Raihan";
-    std::vector<Value> row = { uint32_t{1}, name };
+    std::vector<common::Value> row = { uint32_t{1}, name };
     
     auto rid = user_table.Insert(row);
     EXPECT_TRUE(rid.has_value());

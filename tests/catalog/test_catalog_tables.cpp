@@ -84,9 +84,9 @@ TEST_F(CatalogTablesTest, AttributesCatalogGetColumnsForTable) {
     table_id_t table1 = util::GenerateUUID();
     table_id_t table2 = util::GenerateUUID();
 
-    ColumnInfo c1{table1, util::GenerateUUID(), "id", INT_TYPE, 1};
-    ColumnInfo c2{table1, util::GenerateUUID(), "name", TEXT_TYPE, 2};
-    ColumnInfo c3{table2, util::GenerateUUID(), "price", INT_TYPE, 1};
+    ColumnInfo c1{table1, "id", INT_TYPE, 1};
+    ColumnInfo c2{table1, "name", TEXT_TYPE, 2};
+    ColumnInfo c3{table2, "price", INT_TYPE, 1};
 
     for (auto& c : {c1, c2, c3}) {
         auto buf = ColumnInfoCodec::Encode(c);
