@@ -32,6 +32,10 @@ add_library(main
     src/model/relation.cpp
     src/model/user_table.cpp
     src/model/table_manager.cpp
+    src/common/tuple.cpp
+    src/executor/operators/filter_op.cpp
+    src/executor/operators/seq_scan_op.cpp
+    src/executor/operators/projection_op.cpp
 )
 
 # Disk Manager
