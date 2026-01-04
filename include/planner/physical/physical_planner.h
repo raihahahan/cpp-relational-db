@@ -9,8 +9,8 @@ namespace db::planner {
 
 class PhysicalPlanner {
 public:
-    static std::unique_ptr<executor::Operator> Build(const LogicalPlan& plan,
-                                                        model::TableManager& table_mgr);
+    static std::unique_ptr<executor::Operator> 
+    Build(const LogicalPlan& plan, model::TableManager& table_mgr);
 };
 
 }
