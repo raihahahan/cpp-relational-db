@@ -14,6 +14,7 @@ public:
                  page_id_t page,
                  uint16_t slot,
                  bool has_next);
+    HeapIterator() = default;
     bool HasNext();
     Record Next();
 
