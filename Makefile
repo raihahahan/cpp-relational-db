@@ -57,6 +57,14 @@ test_db_server:
 test_model:
 	@cd $(BUILD_DIR) && ./test_table_manager && ./test_user_table && ./test_dynamic_codec
 
+# EXECUTOR
+test_operators:
+	@cd $(BUILD_DIR) && ./test_filter_op && ./test_limit_op && ./test_projection_op && ./test_seq_scan_op
+
+test_executor:
+	make test_operators
+	@cd $(BUILD_DIR) && ./test_executor
+
 .PHONY: clean
 clean:
 	@rm -rf $(BUILD_DIR)
