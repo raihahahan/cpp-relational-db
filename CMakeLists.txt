@@ -36,6 +36,7 @@ add_library(main
     src/executor/operators/filter_op.cpp
     src/executor/operators/seq_scan_op.cpp
     src/executor/operators/projection_op.cpp
+    src/executor/predicate.cpp
 )
 
 # Disk Manager
