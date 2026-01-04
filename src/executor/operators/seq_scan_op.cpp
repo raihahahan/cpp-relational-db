@@ -9,7 +9,7 @@ void SeqScanOp::Open() {
 }
 
 std::optional<Tuple> SeqScanOp::Next() {
-    if (_iter.HasNext()) return std::nullopt;
+    if (!_iter.HasNext()) return std::nullopt;
     return _rel->Decode(_iter.Next());
 }
 
