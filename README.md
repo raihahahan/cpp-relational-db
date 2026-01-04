@@ -171,6 +171,65 @@ When data is persisted, the **DynamicCodec** transforms these variants into a co
 
 For detailed documentation, see the [model/README.md](src/model/README.md).
 
+## Executor Layer Overview
+
+The **executor layer** is responsible for evaluating query plans and producing result tuples. It executes physical operators using the Volcano (iterator) model and serves as the runtime engine that turns logical query intent into actual data flow.
+
+While the model layer focuses on how data is stored and represented, the executor layer focuses on how data is processed.
+
+| Component        | Description                                                              |
+| ---------------- | ------------------------------------------------------------------------ |
+| **Executor**     | Drives execution of a physical plan by orchestrating operator lifecycle. |
+| **Operator**     | Abstract execution node defining the `Open / Next / Close` contract.     |
+| **SeqScanOp**    | Leaf operator that scans tuples directly from a relation.                |
+| **FilterOp**     | Applies predicates to tuples flowing from its child operator.            |
+| **ProjectionOp** | Selects a subset of columns and produces reshaped tuples.                |
+| **LimitOp**      | Restricts the number of tuples produced by its child operator.           |
+
+### Responsibilities
+
+- **Plan Execution**: Evaluates a tree of physical operators in a pull-based (iterator) manner.
+- **Operator Composition**: Allows operators to be composed like building blocks to form execution pipelines.
+- **Tuple-at-a-Time Processing**: Produces results incrementally, enabling short-circuiting and low memory usage.
+- **Storage Abstraction**: Ensures higher-level operators remain unaware of storage details by isolating them in leaf operators.
+
+### Operator Model
+
+The executor follows the **Volcano execution model**, where each operator implements:
+
+- `Open()` – initialise internal state
+- `Next()` – produce the next tuple (or `nullopt` if exhausted)
+- `Close()` – release resources
+
+Operators are divided into two categories:
+
+- **Leaf operators** (e.g. `SeqScanOp`) that read from a `Relation`
+- **Non-leaf operators** (e.g. `FilterOp`, `ProjectionOp`, `LimitOp`) that transform tuples produced by child operators
+
+This distinction allows storage access to be tightly controlled while keeping higher-level execution logic composable and reusable.
+
+### Example Execution
+
+Operators are assembled bottom-up to form a physical plan:
+
+```cpp
+auto scan = std::make_unique<SeqScanOp>(*students_table);
+auto filter = std::make_unique<FilterOp>(
+    std::move(scan),
+    [](const Tuple& t) {
+        return std::get<uint32_t>(t.GetValues()[0]) >= 2;
+    }
+);
+auto project = std::make_unique<ProjectionOp>(std::move(filter), cols, out_schema);
+
+Executor exec{std::move(project)};
+auto results = exec.ExecuteAndCollect();
+```
+
+Each operator pulls tuples from its child, applies its transformation, and emits results upstream until the plan is exhausted.
+
+For detailed documentation, see the [executor/README.md](src/executor/README.md).
+
 ## Project Roadmap
 
 | Phase | Layer                       | Description                                                  |
