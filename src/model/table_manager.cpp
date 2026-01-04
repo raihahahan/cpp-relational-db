@@ -5,7 +5,7 @@ namespace db::model {
 TableManager::TableManager(catalog::Catalog* catalog) :
                         _catalog{catalog} {};
 
-std::shared_ptr<UserTable> TableManager::OpenTable(std::string_view name) {
+std::shared_ptr<UserTable> TableManager::OpenTable(std::string name) {
     if (_cache.contains(name)) return _cache[name];
 
     auto table_info = _catalog->GetTablesCatalog()->Lookup(name);
