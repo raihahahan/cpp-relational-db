@@ -24,10 +24,11 @@ TableInfo TableInfoCodec::Decode(std::span<const uint8_t> bytes) {
 
 std::vector<Value> TableInfoCodec::ToValues(const TableInfo& row) {
     std::vector<Value> values;
-    values.push_back(row.first_page_id);
-    values.push_back(row.heap_file_id);
     values.push_back(row.table_id);
     values.push_back(row.table_name);
+    values.push_back(row.heap_file_id);
+    values.push_back(row.first_page_id);
+
     return values;
 }
 
@@ -57,10 +58,11 @@ ColumnInfo ColumnInfoCodec::Decode(std::span<const uint8_t> bytes) {
 
 std::vector<Value> ColumnInfoCodec::ToValues(const ColumnInfo& row) {
     std::vector<Value> values;
-    values.push_back(row.col_name);
-    values.push_back(row.ordinal_position);
     values.push_back(row.table_id);
+    values.push_back(row.col_name);
     values.push_back(row.type_id);
+    values.push_back(row.ordinal_position);
+
     return values;
 }
 
@@ -88,8 +90,8 @@ TypeInfo TypeInfoCodec::Decode(std::span<const uint8_t> bytes) {
 
 std::vector<Value> TypeInfoCodec::ToValues(const TypeInfo& row) {
     std::vector<Value> values;
-    values.push_back(row.size);
     values.push_back(row.type_id);
+    values.push_back(row.size);
     values.push_back(row.type_name);
     return values;
 }
