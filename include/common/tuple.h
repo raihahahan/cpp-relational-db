@@ -19,6 +19,7 @@ public:
     );
 
     std::vector<Value> GetValues() const;
+    std::shared_ptr<const Schema> GetSchema() const;
 
 private:
     std::vector<Value> _values;
