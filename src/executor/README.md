@@ -4,7 +4,7 @@ The executor layer is responsible for evaluating query plans and producing resul
 
 The `/executor` folder contains the following components:
 
-````
+```
 +---------------------------------------+
 |               Executor                | Drives execution of a physical
 |    - Execute()                        | operator tree.
@@ -64,7 +64,7 @@ class SeqScanOp : public Operator {
 public:
     explicit SeqScanOp(model::Relation& rel);
 };
-````
+```
 
 **Responsibilities**
 
