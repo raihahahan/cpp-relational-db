@@ -86,8 +86,8 @@ TEST_F(CatalogTest, CreateTableInsertsMetadata) {
     catalog->Init();
 
     std::vector<RawColumnInfo> cols = {
-        { util::GenerateUUID(), "id", INT_TYPE, 1 },
-        { util::GenerateUUID(), "name", TEXT_TYPE, 2 }
+        { "id", INT_TYPE, 1 },
+        { "name", TEXT_TYPE, 2 }
     };
 
     auto table_id = catalog->CreateTable("users", cols);
@@ -102,9 +102,9 @@ TEST_F(CatalogTest, TableColumnsArePersisted) {
     catalog->Init();
 
     std::vector<RawColumnInfo> cols = {
-        { util::GenerateUUID(), "id", INT_TYPE, 1 },
-        { util::GenerateUUID(), "name", TEXT_TYPE, 2 },
-        { util::GenerateUUID(), "age", INT_TYPE, 3 }
+        { "id", INT_TYPE, 1 },
+        { "name", TEXT_TYPE, 2 },
+        { "age", INT_TYPE, 3 }
     };
 
     auto table_id = catalog->CreateTable("people", cols);

@@ -33,9 +33,8 @@ protected:
 };
 
 TEST_F(TableManagerTest, OpenTableAndCacheTest) {
-    auto id_col_id = util::GenerateUUID();
     std::vector<catalog::RawColumnInfo> cols = {
-        { id_col_id, "id", catalog::INT_TYPE, 1 }
+        { "id", catalog::INT_TYPE, 1 }
     };
     TableManager manager{cat};
     manager.CreateTable("students", cols);
@@ -45,7 +44,7 @@ TEST_F(TableManagerTest, OpenTableAndCacheTest) {
     ASSERT_NE(table1, nullptr);
     
     // test functionality of the opened table
-    std::vector<Value> row = { uint32_t{42} };
+    std::vector<common::Value> row = { uint32_t{42} };
     auto rid = table1->Insert(row);
     EXPECT_TRUE(rid.has_value());
 

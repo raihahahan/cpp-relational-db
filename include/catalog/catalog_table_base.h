@@ -15,7 +15,12 @@ concept CatalogCodec =
     requires(const Row& row, std::span<const uint8_t> bytes) {
         { Codec::Encode(row) } -> std::same_as<std::vector<uint8_t>>;
         { Codec::Decode(bytes) } -> std::same_as<Row>;
+        { Codec::ToValues(row) } -> std::same_as<std::vector<common::Value>>;
+        { Codec::GetSchema() } -> std::same_as<common::Schema>;
     };
+
+template <typename T>
+concept IsPlainRow = std::is_aggregate_v<T> && std::is_standard_layout_v<T>;
 
 template <typename Row, typename Codec>
 requires CatalogCodec<Row, Codec>
@@ -32,7 +37,16 @@ public:
     page_id_t GetFirstPage() const {
         return _hf.GetPageId();
     }
+    Tuple Decode(const Record& rec) const override {
+        std::span<const uint8_t> bytes{
+            reinterpret_cast<const uint8_t*>(rec.data),
+            rec.size
+        };
 
+        Row row = Codec::Decode(bytes);
+        return Tuple{Codec::ToValues(row),
+                        std::make_shared<common::Schema>(Codec::GetSchema())};
+    }
 };
 }
 

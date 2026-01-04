@@ -44,7 +44,6 @@ TEST(TableInfoCodecTest, RoundTripMultipleDifferentNames) {
 TEST(ColumnInfoCodecTest, RoundTripSingle) {
     ColumnInfo in{
         .table_id = 1,
-        .col_id = 99,
         .col_name = "email",
         .type_id = 2,
         .ordinal_position = 3
@@ -54,7 +53,6 @@ TEST(ColumnInfoCodecTest, RoundTripSingle) {
     auto out = ColumnInfoCodec::Decode(buf);
 
     EXPECT_EQ(out.table_id, in.table_id);
-    EXPECT_EQ(out.col_id, in.col_id);
     EXPECT_EQ(out.col_name, in.col_name);
     EXPECT_EQ(out.type_id, in.type_id);
     EXPECT_EQ(out.ordinal_position, in.ordinal_position);
@@ -63,9 +61,9 @@ TEST(ColumnInfoCodecTest, RoundTripSingle) {
 TEST(ColumnInfoCodecTest, MultipleColumnsSameTable) {
     using namespace util;
     std::vector<ColumnInfo> cols = {
-        {util::GenerateUUID(), util::GenerateUUID(), "id", 1, 1},
-        {util::GenerateUUID(), util::GenerateUUID(), "username", 2, 2},
-        {util::GenerateUUID(), util::GenerateUUID(), "created_at", 1, 3}
+        {util::GenerateUUID(), "id", 1, 1},
+        {util::GenerateUUID(), "username", 2, 2},
+        {util::GenerateUUID(), "created_at", 1, 3}
     };
 
     for (const auto& c : cols) {
@@ -73,7 +71,6 @@ TEST(ColumnInfoCodecTest, MultipleColumnsSameTable) {
         auto out = ColumnInfoCodec::Decode(buf);
 
         EXPECT_EQ(out.table_id, c.table_id);
-        EXPECT_EQ(out.col_id, c.col_id);
         EXPECT_EQ(out.col_name, c.col_name);
         EXPECT_EQ(out.type_id, c.type_id);
         EXPECT_EQ(out.ordinal_position, c.ordinal_position);

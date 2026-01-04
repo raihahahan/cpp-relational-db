@@ -2,6 +2,8 @@
 #include <vector>
 #include "model/user_table.h"
 
+using Value = db::common::Value;
+
 namespace db::model {
 struct DynamicCodec {
     static std::vector<uint8_t> Encode(
