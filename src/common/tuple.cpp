@@ -12,4 +12,7 @@ std::vector<Value> Tuple::GetValues() const {
     return _values;
 };
 
+std::shared_ptr<const Schema> Tuple::GetSchema() const {
+    return _schema;
+}
 }
