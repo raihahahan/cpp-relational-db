@@ -48,4 +48,24 @@ constexpr uint16_t TEXT_SIZE = -1; // varlen
 constexpr uint32_t INT_ALIGNMENT = 4;
 constexpr uint32_t TEXT_ALIGNMENT = 4;
 
+// CATALOG SCHEMAS 
+const std::vector<ColumnInfo> TABLES_CATALOG_SCHEMA = {
+    {DB_TABLES_TABLE_ID, "table_id", INT_TYPE, 1},
+    {DB_TABLES_TABLE_ID, "table_name", TEXT_TYPE, 2},
+    {DB_TABLES_TABLE_ID, "heap_file_id", INT_TYPE, 3},
+    {DB_TABLES_TABLE_ID, "first_page_id", INT_TYPE, 4}
+};
+
+const std::vector<ColumnInfo> ATTR_CATALOG_SCHEMA = {
+    {DB_ATTRIBUTES_TABLE_ID, "table_id", INT_TYPE, 1},
+    {DB_ATTRIBUTES_TABLE_ID, "col_id", INT_TYPE, 2},
+    {DB_ATTRIBUTES_TABLE_ID, "col_name", TEXT_TYPE, 3},
+    {DB_ATTRIBUTES_TABLE_ID, "type_id", INT_TYPE, 4},
+    {DB_ATTRIBUTES_TABLE_ID, "ordinal_position", INT_TYPE, 5}
+};
+
+const std::vector<ColumnInfo> TYPES_CATALOG_SCHEMA = {
+    {DB_TYPES_TABLE_ID, "type_id", INT_TYPE, 1},
+    {DB_TYPES_TABLE_ID, "size", INT_TYPE, 2}
+};
 }
