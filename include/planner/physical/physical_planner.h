@@ -1,8 +1,9 @@
-#pragma once'
+#pragma once
 
 #include "planner/logical/logical_plan.h"
 #include "executor/operator.h"
 #include "model/table_manager.h"
+#include "planner/logical/logical_planner.h"
 #include <memory>
 
 namespace db::planner {
@@ -10,7 +11,7 @@ namespace db::planner {
 class PhysicalPlanner {
 public:
     static std::unique_ptr<executor::Operator> 
-    Build(const LogicalPlan& plan, model::TableManager& table_mgr);
+    Build(const LogicalPlan& plan, PlanningContext& ctx);
 };
 
 }
