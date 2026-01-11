@@ -39,6 +39,7 @@ add_library(main
     src/executor/operators/limit_op.cpp
     src/executor/predicate.cpp
     src/executor/executor.cpp
+    src/planner/physical/physical_planner.cpp
 )
 
 # Disk Manager
