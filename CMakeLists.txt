@@ -40,6 +40,8 @@ add_library(main
     src/executor/predicate.cpp
     src/executor/executor.cpp
     src/planner/physical/physical_planner.cpp
+    src/parser/lexer.cpp
+    src/error/dberror.cpp
 )
 
 # Disk Manager
