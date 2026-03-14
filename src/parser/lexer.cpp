@@ -9,8 +9,10 @@ std::string_view ToString(TokenType type) {
         case TokenType::Identifier: return "Identifier";
         case TokenType::Keyword: return "Keyword";
         case TokenType::Number: return "Number";
+        case TokenType::StringLiteral: return "StringLiteral";
         case TokenType::Operator: return "Operator";
         case TokenType::Comma: return "Comma";
+        case TokenType::Dot: return "Dot";
         case TokenType::LParen: return "LParen";
         case TokenType::RParen: return "RParen";
         case TokenType::Semicolon: return "Semicolon";
@@ -50,9 +52,15 @@ Token Lexer::Next() {
         return lex_number();
     }
 
+    // string literal
+    if (c == '\'') {
+        return lex_string();
+    }
+
     // single-char tokens
     switch (c) {
         case ',': advance(); return {TokenType::Comma, _input.substr(start, 1), start};
+        case '.': advance(); return {TokenType::Dot, _input.substr(start, 1), start};
         case '(': advance(); return {TokenType::LParen, _input.substr(start, 1), start};
         case ')': advance(); return {TokenType::RParen, _input.substr(start, 1), start};
         case ';': advance(); return {TokenType::Semicolon, _input.substr(start, 1), start};
@@ -63,10 +71,10 @@ Token Lexer::Next() {
         return lex_operator();
     }
 
-    throw DbError(
-            ErrorCode::SyntaxError,
-            "Unexpected character: " + std::string(_input.substr(_pos, _pos + 1)), 
-            _pos);
+    throw DbError(ErrorCode::SyntaxError,
+                   "Unexpected character: " +
+                       std::string(_input.substr(_pos, _pos + 1)),
+                   _pos);
 }
 
 Token Lexer::Peek() {
@@ -121,6 +129,29 @@ Token Lexer::lex_number() {
     return {TokenType::Number, _input.substr(start, _pos - start), start};
 }
 
+Token Lexer::lex_string() {
+    size_t start = _pos;
+    advance(); // skip opening quote
+
+    while (!eof()) {
+        if (peek() == '\'') {
+            advance();
+            if (!eof() && peek() == '\'') {
+                advance(); // escaped quote (''), keep scanning
+            } else {
+                return {TokenType::StringLiteral, _input.substr(start, _pos - start), start};
+            }
+        } else {
+            advance();
+        }
+    }
+
+    throw DbError(
+        ErrorCode::SyntaxError,
+        "Unterminated string literal",
+        start);
+}
+
 Token Lexer::lex_operator() {
     size_t start = _pos;
 
@@ -140,17 +171,13 @@ Token Lexer::lex_operator() {
     // fallback: single-char operator
     // discard invalid operators first
     if (_input.substr(start, 1) == "!") {
-        throw DbError(
-            ErrorCode::SyntaxError,
-            "Unexpected character: " + std::string(_input.substr(start, 1)), 
-            _pos);
-    } 
+        throw DbError(ErrorCode::SyntaxError,
+                       "Unexpected character: " +
+                           std::string(_input.substr(start, 1)),
+                       _pos);
+    }
 
-    return {
-        TokenType::Operator,
-        _input.substr(start, 1),
-        start
-    };
+    return {TokenType::Operator, _input.substr(start, 1), start};
 }
 
 }

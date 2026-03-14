@@ -2,8 +2,7 @@ BUILD_DIR := build
 TARGET := lexer
 
 CXX := g++
-CXXFLAGS := -std=c++20 -Wall -Wextra -Wpedantic -g -O0 \
-            -fsanitize=address,undefined -fno-omit-frame-pointer
+CXXFLAGS := -std=c++20 -Wall -Wextra -Wpedantic -g -O0
 
 INCLUDES := -I../../include
 
