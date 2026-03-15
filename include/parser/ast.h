@@ -1,32 +1,54 @@
 #pragma once
-#include <vector>
-#include <string>
 #include <memory>
+#include <optional>
+#include <string>
+#include <variant>
+#include <vector>
 
 namespace db::parser {
+
 struct AstNode {
     virtual ~AstNode() = default;
 };
+
 struct Expr : AstNode {};
 
 struct ColumnRef : Expr {
     std::string name;
+    std::string table_qualifier; // empty if unqualified, for future table.column
 };
 
 struct Literal : Expr {
+    enum class LiteralType { Integer, String, Null };
+    LiteralType lit_type;
     std::string value;
 };
 
 struct BinaryExpr : Expr {
-    std::string op; // "=", ">=" etc
+    std::string op; // "=", ">=", "AND", "OR", etc
     std::unique_ptr<Expr> lhs;
     std::unique_ptr<Expr> rhs;
 };
 
+struct UnaryExpr : Expr {
+    std::string op; // "NOT", "-"
+    std::unique_ptr<Expr> operand;
+};
+
+struct ResTarget : AstNode {
+    std::unique_ptr<Expr> val;
+    std::string alias; // empty if no AS clause
+};
+
+struct StarTarget : AstNode {};
+
+using SelectTarget = std::variant<StarTarget, ResTarget>;
+
 struct SelectStmt : AstNode {
-    std::vector<std::string> select_list; // column names
+    std::vector<SelectTarget> target_list;
     std::string from_table;
     std::unique_ptr<Expr> where; // nullable   
-    size_t limit = 0; // 0 = no limit
+    std::optional<size_t> limit; // nullopt = no limit
 };
+
 }
