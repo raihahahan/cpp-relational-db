@@ -1,6 +1,6 @@
 BUILD_DIR := build
 CMAKE_FLAGS := -DCMAKE_BUILD_TYPE=Debug
-.PHONY: all build test test_disk_manager clean
+.PHONY: all build test clean
 all: build
 
 .PHONY: build
@@ -64,6 +64,20 @@ test_operators:
 test_executor:
 	make test_operators
 	@cd $(BUILD_DIR) && ./test_executor
+
+# PARSER
+build_parser:
+	@mkdir -p src/parser/build
+	@cd src/parser && make all
+
+test_parser: build
+	@cd $(BUILD_DIR) && ./test_parser
+
+test_lexer: build
+	@cd $(BUILD_DIR) && ./test_lexer
+
+test_parser_all: build
+	@cd $(BUILD_DIR) && ./test_lexer && ./test_parser
 
 .PHONY: clean
 clean:

@@ -1,12 +1,12 @@
 BUILD_DIR := build
-TARGET := lexer
+TARGET := parser_driver
 
 CXX := g++
 CXXFLAGS := -std=c++20 -Wall -Wextra -Wpedantic -g -O0
 
 INCLUDES := -I../../include
 
-SRCS := lexer.cpp main.cpp ../error/dberror.cpp
+SRCS := lexer.cpp parser.cpp main.cpp ../error/dberror.cpp
 
 .PHONY: all clean
 
