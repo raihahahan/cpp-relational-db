@@ -41,6 +41,7 @@ add_library(main
     src/executor/executor.cpp
     src/planner/physical/physical_planner.cpp
     src/parser/lexer.cpp
+    src/parser/parser.cpp
     src/error/dberror.cpp
 )
 
