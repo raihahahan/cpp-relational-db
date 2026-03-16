@@ -1,6 +1,8 @@
 #pragma once
 #include <memory>
+#include <vector>
 #include "parser/ast.h"
+
 namespace db::planner {
 enum class LogicalPlanType {
     Scan,

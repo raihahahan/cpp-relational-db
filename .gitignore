@@ -34,7 +34,7 @@
 
 # Executables
 *.exe
-*.out
+*.out*
 *.app
 
 # debug information files
