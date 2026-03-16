@@ -6,7 +6,7 @@ CXXFLAGS := -std=c++20 -Wall -Wextra -Wpedantic -g -O0
 
 INCLUDES := -I../../include
 
-SRCS := lexer.cpp parser.cpp main.cpp ../error/dberror.cpp
+SRCS := lexer.cpp parser.cpp analyzer.cpp main.cpp ../error/dberror.cpp
 
 .PHONY: all clean
 
