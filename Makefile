@@ -76,8 +76,18 @@ test_parser: build
 test_lexer: build
 	@cd $(BUILD_DIR) && ./test_lexer
 
+test_analyzer: build
+	@cd $(BUILD_DIR) && ./test_analyzer
+
+test_integration: build
+	@cd $(BUILD_DIR) && ./test_integration
+
 test_parser_all: build
-	@cd $(BUILD_DIR) && ./test_lexer && ./test_parser
+	@cd $(BUILD_DIR) && ./test_lexer && ./test_parser && ./test_analyzer && ./test_integration
+
+# E2E DRIVER
+run_sql: build
+	@cd $(BUILD_DIR) && ./sql_engine
 
 .PHONY: clean
 clean:

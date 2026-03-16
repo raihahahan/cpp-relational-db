@@ -39,9 +39,11 @@ add_library(main
     src/executor/operators/limit_op.cpp
     src/executor/predicate.cpp
     src/executor/executor.cpp
+    src/planner/logical/logical_planner.cpp
     src/planner/physical/physical_planner.cpp
     src/parser/lexer.cpp
     src/parser/parser.cpp
+    src/parser/analyzer.cpp
     src/error/dberror.cpp
 )
 
@@ -52,6 +54,13 @@ add_executable(dm
 target_include_directories(dm PUBLIC
         ${PROJECT_SOURCE_DIR}/include
 )
+
+# End-to-end SQL driver
+add_executable(sql_engine src/main.cpp)
+target_include_directories(sql_engine PRIVATE ${PROJECT_SOURCE_DIR}/include)
+target_link_libraries(sql_engine PRIVATE main)
+target_compile_options(sql_engine PRIVATE -fsanitize=address -fno-omit-frame-pointer)
+target_link_options(sql_engine PRIVATE -fsanitize=address)
 
 target_include_directories(main PUBLIC
     ${PROJECT_SOURCE_DIR}/include
