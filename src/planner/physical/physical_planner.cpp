@@ -33,7 +33,8 @@ compile(const parser::AnalyzedExpr &expr) {
         uint16_t pos = col->column.ordinal_position;
         catalog::type_id_t type = col->column.type_id;
         return [pos, type](const Tuple &t) -> bool {
-            auto& v = t.GetValues()[pos - 1];
+            auto vals = t.GetValues();
+            auto& v = vals[pos - 1];
             if (type == catalog::INT_TYPE)
                 return std::get<uint32_t>(v) != 0;
             return !std::get<std::string>(v).empty();

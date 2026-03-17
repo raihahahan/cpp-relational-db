@@ -13,6 +13,16 @@ std::optional<RID> UserTable::Insert(const std::vector<Value> values) {
     return InsertRaw(bytes, bytes.size());
 }
 
+bool UserTable::Update(const access::RID& rid, const std::vector<common::Value>& values) {
+    auto bytes = DynamicCodec::Encode(values, _schema);
+    const char* data = reinterpret_cast<const char*>(bytes.data());
+    return _hf.Update(data, bytes.size(), rid);
+}
+
+bool UserTable::Delete(const access::RID& rid) {
+    return _hf.Delete(rid);
+}
+
 Tuple UserTable::Decode(const Record& rec) const {
     std::span<const uint8_t> bytes{
         reinterpret_cast<const uint8_t*>(rec.data),

@@ -31,6 +31,6 @@ Tuple ProjectionOp::Project(const Tuple& tup) {
             projected.push_back(vals[idx]);
         }
     }
-    return Tuple{projected, _out_schema};
+    return Tuple{projected, _out_schema, tup.GetRID()};
 }
 }
