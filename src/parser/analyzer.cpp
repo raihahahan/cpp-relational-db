@@ -51,11 +51,21 @@ std::unique_ptr<AnalyzedExpr> clone(const AnalyzedExpr& expr) {
 
 Analyzer::Analyzer(catalog::Catalog& catalog) : _catalog(catalog) {}
 
-// ENTRYPOINTS
-std::unique_ptr<Query> Analyzer::Analyze(const AstNode& parse_tree) {
+// ENTRYPOINT
+std::unique_ptr<AnalyzedStmt> Analyzer::Analyze(const AstNode& parse_tree) {
+    auto result = std::make_unique<AnalyzedStmt>();
+
     if (auto* select = dynamic_cast<const SelectStmt*>(&parse_tree)) {
-        return analyze_select(*select);
+        result->type = StmtType::Select;
+        result->select_query = analyze_select(*select);
+        return result;
     }
+    if (auto* del = dynamic_cast<const DeleteStmt*>(&parse_tree)) {
+        result->type = StmtType::Delete;
+        result->delete_query = analyze_delete(*del);
+        return result;
+    }
+
     throw DbError(ErrorCode::ParseError, "unsupported statement type");
 }
 
@@ -86,6 +96,24 @@ std::unique_ptr<Query> Analyzer::analyze_select(const SelectStmt& stmt) {
     query->limit_count = stmt.limit;
 
     return query;
+}
+
+std::unique_ptr<AnalyzedDelete> Analyzer::analyze_delete(const DeleteStmt& stmt) {
+    auto result = std::make_unique<AnalyzedDelete>();
+
+    result->table = resolve_table(stmt.table_name);
+    result->table_columns = _catalog.GetTableColumns(result->table.table_id);
+
+    std::sort(result->table_columns.begin(), result->table_columns.end(),
+              [](const catalog::ColumnInfo& a, const catalog::ColumnInfo& b) {
+                  return a.ordinal_position < b.ordinal_position;
+              });
+
+    if (stmt.where) {
+        result->where_clause = analyze_expr(*stmt.where, result->table_columns);
+    }
+
+    return result;
 }
 
 

@@ -90,7 +90,14 @@ std::unique_ptr<AstNode> Parser::Parse(const std::string& sql) {
     Lexer lexer{sql};
     Parser parser{std::move(lexer)};
 
-    auto stmt = parser.parse_select_stmt();
+    std::unique_ptr<AstNode> stmt;
+    if (parser.check_keyword("select"))
+        stmt = parser.parse_select_stmt();
+    else if (parser.check_keyword("delete"))
+        stmt = parser.parse_delete_stmt();
+    else
+        parser.error("expected SELECT or DELETE, got '" +
+                     std::string(parser.peek().lexeme) + "'");
 
     if (!parser.at_end() && !parser.check(TokenType::Semicolon)) {
         parser.error("unexpected token after statement: '" +
@@ -318,5 +325,22 @@ std::unique_ptr<Expr> Parser::parse_primary_expr() {
     }
 
     error("expected expression, got '" + std::string(_current.lexeme) + "'");
+}
+
+// DELETE statement
+std::unique_ptr<DeleteStmt> Parser::parse_delete_stmt() {
+    consume_keyword("delete");
+    consume_keyword("from");
+
+    Token table_tok = consume(TokenType::Identifier);
+
+    auto stmt = std::make_unique<DeleteStmt>();
+    stmt->table_name = std::string(table_tok.lexeme);
+
+    if (match_keyword("where")) {
+        stmt->where = parse_expr();
+    }
+
+    return stmt;
 }
 }

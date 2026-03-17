@@ -350,3 +350,64 @@ TEST(ParserIntegration, TrailingSemicolon) {
     ASSERT_NE(stmt, nullptr);
     EXPECT_EQ(stmt->from_table, "t");
 }
+
+
+// DELETE parsing
+
+static DeleteStmt* parse_delete(const std::string& sql,
+                                std::unique_ptr<AstNode>& owner) {
+    owner = Parser::Parse(sql);
+    return dynamic_cast<DeleteStmt*>(owner.get());
+}
+
+TEST(ParserDelete, DeleteWithWhere) {
+    std::unique_ptr<AstNode> ast;
+    auto* stmt = parse_delete("DELETE FROM users WHERE id = 1", ast);
+
+    ASSERT_NE(stmt, nullptr);
+    EXPECT_EQ(stmt->table_name, "users");
+    ASSERT_NE(stmt->where, nullptr);
+
+    auto* bin = dynamic_cast<BinaryExpr*>(stmt->where.get());
+    ASSERT_NE(bin, nullptr);
+    EXPECT_EQ(bin->op, "=");
+
+    auto* lhs = dynamic_cast<ColumnRef*>(bin->lhs.get());
+    ASSERT_NE(lhs, nullptr);
+    EXPECT_EQ(lhs->name, "id");
+}
+
+TEST(ParserDelete, DeleteAllRows) {
+    std::unique_ptr<AstNode> ast;
+    auto* stmt = parse_delete("DELETE FROM users", ast);
+
+    ASSERT_NE(stmt, nullptr);
+    EXPECT_EQ(stmt->table_name, "users");
+    EXPECT_EQ(stmt->where, nullptr);
+}
+
+TEST(ParserDelete, DeleteWithSemicolon) {
+    std::unique_ptr<AstNode> ast;
+    auto* stmt = parse_delete("DELETE FROM users;", ast);
+
+    ASSERT_NE(stmt, nullptr);
+    EXPECT_EQ(stmt->table_name, "users");
+}
+
+TEST(ParserDelete, DeleteComplexWhere) {
+    std::unique_ptr<AstNode> ast;
+    auto* stmt = parse_delete("DELETE FROM users WHERE age > 30 AND name = 'admin'", ast);
+
+    ASSERT_NE(stmt, nullptr);
+    auto* top = dynamic_cast<BinaryExpr*>(stmt->where.get());
+    ASSERT_NE(top, nullptr);
+    EXPECT_EQ(top->op, "AND");
+}
+
+TEST(ParserDelete, DeleteMissingFrom) {
+    EXPECT_THROW(Parser::Parse("DELETE users"), DbError);
+}
+
+TEST(ParserDelete, DeleteMissingTable) {
+    EXPECT_THROW(Parser::Parse("DELETE FROM"), DbError);
+}

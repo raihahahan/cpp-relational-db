@@ -8,7 +8,8 @@ enum class LogicalPlanType {
     Scan,
     Filter,
     Project,
-    Limit
+    Limit,
+    Delete
 };
 
 class LogicalPlan {

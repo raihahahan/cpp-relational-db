@@ -23,6 +23,13 @@ protected:
     std::unique_ptr<Query> analyze(const std::string& sql) {
         auto ast = Parser::Parse(sql);
         Analyzer analyzer(*db_->catalog);
+        auto stmt = analyzer.Analyze(*ast);
+        return std::move(stmt->select_query);
+    }
+
+    std::unique_ptr<AnalyzedStmt> analyze_stmt(const std::string& sql) {
+        auto ast = Parser::Parse(sql);
+        Analyzer analyzer(*db_->catalog);
         return analyzer.Analyze(*ast);
     }
 
@@ -246,4 +253,53 @@ TEST_F(AnalyzerTest, ComplexQuery) {
 
     ASSERT_TRUE(q->limit_count.has_value());
     EXPECT_EQ(q->limit_count.value(), 25u);
+}
+
+
+// DELETE analysis
+TEST_F(AnalyzerTest, DeleteResolvesTable) {
+    auto stmt = analyze_stmt("DELETE FROM users WHERE id = 1");
+
+    ASSERT_EQ(stmt->type, StmtType::Delete);
+    ASSERT_NE(stmt->delete_query, nullptr);
+    EXPECT_EQ(stmt->delete_query->table.table_name, "users");
+    EXPECT_FALSE(stmt->delete_query->table_columns.empty());
+}
+
+TEST_F(AnalyzerTest, DeleteWithWhere) {
+    auto stmt = analyze_stmt("DELETE FROM users WHERE id = 1");
+
+    ASSERT_NE(stmt->delete_query->where_clause, nullptr);
+    auto* bin = dynamic_cast<AnalyzedBinaryExpr*>(
+        stmt->delete_query->where_clause.get());
+    ASSERT_NE(bin, nullptr);
+    EXPECT_EQ(bin->op, "=");
+}
+
+TEST_F(AnalyzerTest, DeleteAllRows) {
+    auto stmt = analyze_stmt("DELETE FROM users");
+
+    ASSERT_EQ(stmt->type, StmtType::Delete);
+    EXPECT_EQ(stmt->delete_query->where_clause, nullptr);
+}
+
+TEST_F(AnalyzerTest, DeleteUndefinedTableThrows) {
+    EXPECT_THROW(analyze_stmt("DELETE FROM ghosts"), DbError);
+
+    try {
+        analyze_stmt("DELETE FROM ghosts");
+    } catch (const DbError& e) {
+        EXPECT_EQ(e.code(), ErrorCode::UndefinedTable);
+    }
+}
+
+TEST_F(AnalyzerTest, DeleteUndefinedColumnInWhereThrows) {
+    EXPECT_THROW(
+        analyze_stmt("DELETE FROM users WHERE bad_col = 1"), DbError);
+
+    try {
+        analyze_stmt("DELETE FROM users WHERE bad_col = 1");
+    } catch (const DbError& e) {
+        EXPECT_EQ(e.code(), ErrorCode::UndefinedColumn);
+    }
 }

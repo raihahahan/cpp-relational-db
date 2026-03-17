@@ -54,6 +54,23 @@ struct Query {
     std::optional<size_t> limit_count;
 };
 
+// Analyzed DELETE output
+struct AnalyzedDelete {
+    catalog::TableInfo table;
+    std::vector<catalog::ColumnInfo> table_columns;
+    std::unique_ptr<AnalyzedExpr> where_clause; // nullable
+};
+
+// Statement type tag
+enum class StmtType { Select, Insert, Update, Delete };
+
+// Generic wrapper returned by Analyze()
+struct AnalyzedStmt {
+    StmtType type;
+    std::unique_ptr<Query> select_query;
+    std::unique_ptr<AnalyzedDelete> delete_query;
+};
+
 // Deep-copy an AnalyzedExpr tree
 std::unique_ptr<AnalyzedExpr> clone(const AnalyzedExpr& expr);
 
@@ -62,10 +79,11 @@ class Analyzer {
 public:
     explicit Analyzer(catalog::Catalog& catalog);
 
-    std::unique_ptr<Query> Analyze(const AstNode& parse_tree);
+    std::unique_ptr<AnalyzedStmt> Analyze(const AstNode& parse_tree);
 
 private:
     std::unique_ptr<Query> analyze_select(const SelectStmt& stmt);
+    std::unique_ptr<AnalyzedDelete> analyze_delete(const DeleteStmt& stmt);
 
     // Name resolution
     catalog::TableInfo resolve_table(const std::string& table_name);

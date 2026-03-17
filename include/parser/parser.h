@@ -12,6 +12,7 @@ private:
 
     // statement parsing
     std::unique_ptr<SelectStmt> parse_select_stmt();
+    std::unique_ptr<DeleteStmt> parse_delete_stmt();
 
     // target list
     std::vector<SelectTarget> parse_target_list();

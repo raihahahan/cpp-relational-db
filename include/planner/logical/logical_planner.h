@@ -9,6 +9,7 @@ namespace db::planner {
 class LogicalPlanner {
 public:
     static LogicalPlanPtr Build(const parser::Query& query);
+    static LogicalPlanPtr Build(const parser::AnalyzedDelete& del);
 };
 
 struct PlanningContext {

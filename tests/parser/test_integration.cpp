@@ -39,9 +39,15 @@ protected:
     std::vector<common::Tuple> run(const std::string &sql) {
         auto ast = parser::Parser::Parse(sql);
         parser::Analyzer analyzer{*db_->catalog};
-        auto query = analyzer.Analyze(*ast);
-        auto logical = planner::LogicalPlanner::Build(*query);
+        auto stmt = analyzer.Analyze(*ast);
         planner::PlanningContext ctx{db_->table_mgr.get()};
+
+        planner::LogicalPlanPtr logical;
+        if (stmt->type == parser::StmtType::Select)
+            logical = planner::LogicalPlanner::Build(*stmt->select_query);
+        else if (stmt->type == parser::StmtType::Delete)
+            logical = planner::LogicalPlanner::Build(*stmt->delete_query);
+
         auto physical = planner::PhysicalPlanner::Build(*logical, ctx);
         executor::Executor exec{std::move(physical)};
         return exec.ExecuteAndCollect();
@@ -163,4 +169,41 @@ TEST_F(IntegrationTest, UndefinedTable) {
 // Error handling: undefined column
 TEST_F(IntegrationTest, UndefinedColumn) {
     EXPECT_THROW(run("SELECT missing FROM users"), DbError);
+}
+
+
+// DELETE integration
+TEST_F(IntegrationTest, DeleteWithWhere) {
+    auto result = run("DELETE FROM users WHERE id = 3");
+    ASSERT_EQ(result.size(), 1);
+    EXPECT_EQ(std::get<uint32_t>(result[0].GetValues()[0]), 1);
+
+    auto remaining = run("SELECT * FROM users");
+    EXPECT_EQ(remaining.size(), 4);
+
+    for (const auto& row : remaining) {
+        EXPECT_NE(std::get<uint32_t>(row.GetValues()[0]), uint32_t(3));
+    }
+}
+
+TEST_F(IntegrationTest, DeleteAllRows) {
+    auto result = run("DELETE FROM users");
+    ASSERT_EQ(result.size(), 1);
+    EXPECT_EQ(std::get<uint32_t>(result[0].GetValues()[0]), 5);
+
+    auto remaining = run("SELECT * FROM users");
+    EXPECT_EQ(remaining.size(), 0);
+}
+
+TEST_F(IntegrationTest, DeleteNoMatch) {
+    auto result = run("DELETE FROM users WHERE id = 999");
+    ASSERT_EQ(result.size(), 1);
+    EXPECT_EQ(std::get<uint32_t>(result[0].GetValues()[0]), 0);
+
+    auto remaining = run("SELECT * FROM users");
+    EXPECT_EQ(remaining.size(), 5);
+}
+
+TEST_F(IntegrationTest, DeleteUndefinedTableThrows) {
+    EXPECT_THROW(run("DELETE FROM ghosts"), DbError);
 }

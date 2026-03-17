@@ -51,4 +51,9 @@ struct SelectStmt : AstNode {
     std::optional<size_t> limit; // nullopt = no limit
 };
 
+struct DeleteStmt : AstNode {
+    std::string table_name;
+    std::unique_ptr<Expr> where; // nullable (no WHERE = delete all rows)
+};
+
 }

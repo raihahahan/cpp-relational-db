@@ -3,6 +3,7 @@
 #include "planner/logical/nodes/filter.h"
 #include "planner/logical/nodes/project.h"
 #include "planner/logical/nodes/limit.h"
+#include "planner/logical/nodes/delete_node.h"
 
 namespace db::planner {
 
@@ -74,6 +75,21 @@ const std::vector<LogicalPlan *> &LogicalLimit::Children() const {
 
 size_t LogicalLimit::Limit() const { return _limit; }
 
+// LogicalDelete
+LogicalDelete::LogicalDelete(LogicalPlanPtr child, std::string table_name)
+    : _child(std::move(child)), _table_name(std::move(table_name)) {}
+
+LogicalPlanType LogicalDelete::Type() const { return LogicalPlanType::Delete; }
+
+const std::vector<LogicalPlan*>& LogicalDelete::Children() const {
+    _children_cache = {_child.get()};
+    return _children_cache;
+}
+
+const std::string& LogicalDelete::TableName() const { return _table_name; }
+
+LogicalPlan& LogicalDelete::Child() const { return *_child; }
+
 }
 
 LogicalPlanPtr LogicalPlanner::Build(const parser::Query &query) {
@@ -107,5 +123,18 @@ LogicalPlanPtr LogicalPlanner::Build(const parser::Query &query) {
     }
 
     return plan;
+}
+
+LogicalPlanPtr LogicalPlanner::Build(const parser::AnalyzedDelete& del) {
+    LogicalPlanPtr plan = std::make_unique<logical::LogicalScan>(del.table.table_name);
+
+    if (del.where_clause) {
+        auto pred_copy = parser::clone(*del.where_clause);
+        plan = std::make_unique<logical::LogicalFilter>(std::move(plan),
+                                                        std::move(pred_copy));
+    }
+
+    return std::make_unique<logical::LogicalDelete>(std::move(plan),
+                                                    del.table.table_name);
 }
 }

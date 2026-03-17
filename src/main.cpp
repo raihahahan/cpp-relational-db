@@ -81,38 +81,44 @@ int main() {
             continue;
 
         try {
-            // 1. Parse
             auto ast = parser::Parser::Parse(line);
-
-            // 2. Analyze
             parser::Analyzer analyzer{catalog};
-            auto query = analyzer.Analyze(*ast);
-
-            // 3. Logical plan
-            auto logical_plan = planner::LogicalPlanner::Build(*query);
-
-            // 4. Physical plan
+            auto stmt = analyzer.Analyze(*ast);
             planner::PlanningContext ctx{&table_mgr};
-            auto physical_plan =
-                planner::PhysicalPlanner::Build(*logical_plan, ctx);
 
-            // 5. Execute
-            executor::Executor exec{std::move(physical_plan)};
-            auto results = exec.ExecuteAndCollect();
+            if (stmt->type == parser::StmtType::Select) {
+                auto logical_plan = planner::LogicalPlanner::Build(*stmt->select_query);
+                auto physical_plan = planner::PhysicalPlanner::Build(*logical_plan, ctx);
+                executor::Executor exec{std::move(physical_plan)};
+                auto results = exec.ExecuteAndCollect();
 
-            // Print header
-            std::cout << "--- ";
-            for (size_t i = 0; i < query->target_list.size(); ++i) {
-                if (i > 0)
-                    std::cout << " | ";
-                std::cout << query->target_list[i].name;
+                std::cout << "--- ";
+                for (size_t i = 0; i < stmt->select_query->target_list.size(); ++i) {
+                    if (i > 0) std::cout << " | ";
+                    std::cout << stmt->select_query->target_list[i].name;
+                }
+                std::cout << " ---\n";
+
+                for (const auto &row : results) {
+                    print_tuple(row);
+                }
+                std::cout << "(" << results.size() << " rows)\n\n";
+            } else {
+                planner::LogicalPlanPtr logical_plan;
+                if (stmt->type == parser::StmtType::Delete) {
+                    logical_plan = planner::LogicalPlanner::Build(*stmt->delete_query);
+                }
+                auto physical_plan = planner::PhysicalPlanner::Build(*logical_plan, ctx);
+                executor::Executor exec{std::move(physical_plan)};
+                auto results = exec.ExecuteAndCollect();
+
+                uint32_t count = 0;
+                if (!results.empty()) {
+                    count = std::get<uint32_t>(results[0].GetValues()[0]);
+                }
+                    
+                std::cout << "(" << count << " rows affected)\n\n";
             }
-            std::cout << " ---\n";
-
-            for (const auto &row : results) {
-                print_tuple(row);
-            }
-            std::cout << "(" << results.size() << " rows)\n\n";
 
         } catch (const DbError &e) {
             std::cerr << "ERROR: " << e.what() << "\n\n";

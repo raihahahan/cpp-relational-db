@@ -5,11 +5,13 @@
 #include "planner/logical/nodes/filter.h"
 #include "planner/logical/nodes/project.h"
 #include "planner/logical/nodes/limit.h"
+#include "planner/logical/nodes/delete_node.h"
 
 #include "executor/operators/seq_scan_op.h"
 #include "executor/operators/filter_op.h"
 #include "executor/operators/limit_op.h"
 #include "executor/operators/projection_op.h"
+#include "executor/operators/delete_op.h"
 #include "executor/predicate.h"
 #include "parser/analyzer.h"
 #include "catalog/catalog_bootstrap.h"
@@ -278,6 +280,13 @@ PhysicalPlanner::Build(const LogicalPlan &plan, PlanningContext &ctx) {
         return std::make_unique<executor::LimitOp>(
             std::move(child_op), limit.Limit()
         );
+    }
+
+    case LogicalPlanType::Delete: {
+        auto& del = static_cast<const logical::LogicalDelete&>(plan);
+        auto table = ctx.table_mgr->OpenTable(del.TableName());
+        auto child_op = Build(del.Child(), ctx);
+        return std::make_unique<executor::DeleteOp>(std::move(child_op), table);
     }
 
     default:
