@@ -10,6 +10,7 @@ class LogicalPlanner {
 public:
     static LogicalPlanPtr Build(const parser::Query& query);
     static LogicalPlanPtr Build(const parser::AnalyzedInsert& ins);
+    static LogicalPlanPtr Build(const parser::AnalyzedUpdate& upd);
     static LogicalPlanPtr Build(const parser::AnalyzedDelete& del);
 };
 

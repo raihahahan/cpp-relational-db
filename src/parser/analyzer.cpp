@@ -65,6 +65,11 @@ std::unique_ptr<AnalyzedStmt> Analyzer::Analyze(const AstNode& parse_tree) {
         result->insert_query = analyze_insert(*ins);
         return result;
     }
+    if (auto* upd = dynamic_cast<const UpdateStmt*>(&parse_tree)) {
+        result->type = StmtType::Update;
+        result->update_query = analyze_update(*upd);
+        return result;
+    }
     if (auto* del = dynamic_cast<const DeleteStmt*>(&parse_tree)) {
         result->type = StmtType::Delete;
         result->delete_query = analyze_delete(*del);
@@ -159,6 +164,41 @@ std::unique_ptr<AnalyzedInsert> Analyzer::analyze_insert(const InsertStmt& stmt)
             analyzed_row.push_back(std::move(analyzed_val));
         }
         result->values.push_back(std::move(analyzed_row));
+    }
+
+    return result;
+}
+
+std::unique_ptr<AnalyzedUpdate> Analyzer::analyze_update(const UpdateStmt& stmt) {
+    auto result = std::make_unique<AnalyzedUpdate>();
+
+    result->table = resolve_table(stmt.table_name);
+    result->table_columns = _catalog.GetTableColumns(result->table.table_id);
+    std::sort(result->table_columns.begin(), result->table_columns.end(),
+              [](const catalog::ColumnInfo& a, const catalog::ColumnInfo& b) {
+                  return a.ordinal_position < b.ordinal_position;
+              });
+
+    if (stmt.set_clauses.empty()) {
+        throw DbError(ErrorCode::ParseError, "UPDATE requires at least one SET clause");
+    }
+
+    for (const auto& clause : stmt.set_clauses) {
+        auto col = resolve_column(clause.column_name, result->table_columns);
+        auto analyzed_val = analyze_expr(*clause.value, result->table_columns);
+        auto val_type = analyzed_val->result_type;
+
+        if (val_type != 0 && col.type_id != 0 && val_type != col.type_id) {
+            throw DbError(ErrorCode::TypeMismatch,
+                "column \"" + col.col_name + "\" is " + type_name(col.type_id) +
+                " but expression is " + type_name(val_type));
+        }
+
+        result->assignments.emplace_back(col, std::move(analyzed_val));
+    }
+
+    if (stmt.where) {
+        result->where_clause = analyze_expr(*stmt.where, result->table_columns);
     }
 
     return result;

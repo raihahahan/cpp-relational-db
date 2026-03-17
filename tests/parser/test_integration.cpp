@@ -47,6 +47,8 @@ protected:
             logical = planner::LogicalPlanner::Build(*stmt->select_query);
         else if (stmt->type == parser::StmtType::Insert)
             logical = planner::LogicalPlanner::Build(*stmt->insert_query);
+        else if (stmt->type == parser::StmtType::Update)
+            logical = planner::LogicalPlanner::Build(*stmt->update_query);
         else if (stmt->type == parser::StmtType::Delete)
             logical = planner::LogicalPlanner::Build(*stmt->delete_query);
 
@@ -264,4 +266,62 @@ TEST_F(IntegrationTest, InsertThenDeleteRoundTrip) {
     run("DELETE FROM users WHERE id = 99");
     auto after = run("SELECT * FROM users WHERE id = 99");
     EXPECT_EQ(after.size(), 0);
+}
+
+
+// UPDATE integration
+TEST_F(IntegrationTest, UpdateWithWhere) {
+    auto result = run("UPDATE users SET name = 'ALICE' WHERE id = 1");
+    ASSERT_EQ(result.size(), 1);
+    EXPECT_EQ(std::get<uint32_t>(result[0].GetValues()[0]), 1);
+
+    auto rows = run("SELECT name FROM users WHERE id = 1");
+    ASSERT_EQ(rows.size(), 1);
+    EXPECT_EQ(std::get<std::string>(rows[0].GetValues()[0]), "ALICE");
+}
+
+TEST_F(IntegrationTest, UpdateAllRows) {
+    auto result = run("UPDATE users SET age = 99");
+    ASSERT_EQ(result.size(), 1);
+    EXPECT_EQ(std::get<uint32_t>(result[0].GetValues()[0]), 5);
+
+    auto rows = run("SELECT age FROM users");
+    for (const auto& row : rows) {
+        EXPECT_EQ(std::get<uint32_t>(row.GetValues()[0]), 99);
+    }
+}
+
+TEST_F(IntegrationTest, UpdateNoMatch) {
+    auto result = run("UPDATE users SET age = 1 WHERE id = 999");
+    ASSERT_EQ(result.size(), 1);
+    EXPECT_EQ(std::get<uint32_t>(result[0].GetValues()[0]), 0);
+}
+
+TEST_F(IntegrationTest, UpdateMultiColumn) {
+    auto result = run(
+        "UPDATE users SET name = 'Updated', age = 50 WHERE id = 2");
+    ASSERT_EQ(result.size(), 1);
+    EXPECT_EQ(std::get<uint32_t>(result[0].GetValues()[0]), 1);
+
+    auto rows = run("SELECT name, age FROM users WHERE id = 2");
+    ASSERT_EQ(rows.size(), 1);
+    EXPECT_EQ(std::get<std::string>(rows[0].GetValues()[0]), "Updated");
+    EXPECT_EQ(std::get<uint32_t>(rows[0].GetValues()[1]), 50);
+}
+
+TEST_F(IntegrationTest, UpdateTypeMismatchThrows) {
+    EXPECT_THROW(
+        run("UPDATE users SET id = 'bad' WHERE id = 1"), DbError);
+}
+
+TEST_F(IntegrationTest, UpdateUndefinedTableThrows) {
+    EXPECT_THROW(
+        run("UPDATE ghosts SET x = 1"), DbError);
+}
+
+TEST_F(IntegrationTest, UpdateThenSelectRoundTrip) {
+    run("UPDATE users SET age = 100 WHERE name = 'Eve'");
+    auto rows = run("SELECT age FROM users WHERE name = 'Eve'");
+    ASSERT_EQ(rows.size(), 1);
+    EXPECT_EQ(std::get<uint32_t>(rows[0].GetValues()[0]), 100);
 }

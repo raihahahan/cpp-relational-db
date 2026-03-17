@@ -10,6 +10,7 @@ enum class LogicalPlanType {
     Project,
     Limit,
     Insert,
+    Update,
     Delete
 };
 

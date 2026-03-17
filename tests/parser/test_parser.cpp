@@ -505,3 +505,89 @@ TEST(ParserInsert, MissingInto) {
 TEST(ParserInsert, MissingTableName) {
     EXPECT_THROW(Parser::Parse("INSERT INTO VALUES (1)"), DbError);
 }
+
+
+// UPDATE parsing
+
+static UpdateStmt* parse_update(const std::string& sql,
+                                std::unique_ptr<AstNode>& owner) {
+    owner = Parser::Parse(sql);
+    return dynamic_cast<UpdateStmt*>(owner.get());
+}
+
+TEST(ParserUpdate, SingleSet) {
+    std::unique_ptr<AstNode> ast;
+    auto* stmt = parse_update("UPDATE users SET name = 'Bob'", ast);
+
+    ASSERT_NE(stmt, nullptr);
+    EXPECT_EQ(stmt->table_name, "users");
+    ASSERT_EQ(stmt->set_clauses.size(), 1);
+    EXPECT_EQ(stmt->set_clauses[0].column_name, "name");
+
+    auto* val = dynamic_cast<Literal*>(stmt->set_clauses[0].value.get());
+    ASSERT_NE(val, nullptr);
+    EXPECT_EQ(val->lit_type, Literal::LiteralType::String);
+    EXPECT_EQ(val->value, "Bob");
+
+    EXPECT_EQ(stmt->where, nullptr);
+}
+
+TEST(ParserUpdate, MultiSet) {
+    std::unique_ptr<AstNode> ast;
+    auto* stmt = parse_update(
+        "UPDATE users SET name = 'Bob', age = 30", ast);
+
+    ASSERT_NE(stmt, nullptr);
+    ASSERT_EQ(stmt->set_clauses.size(), 2);
+    EXPECT_EQ(stmt->set_clauses[0].column_name, "name");
+    EXPECT_EQ(stmt->set_clauses[1].column_name, "age");
+}
+
+TEST(ParserUpdate, WithWhere) {
+    std::unique_ptr<AstNode> ast;
+    auto* stmt = parse_update(
+        "UPDATE users SET age = 31 WHERE id = 1", ast);
+
+    ASSERT_NE(stmt, nullptr);
+    ASSERT_EQ(stmt->set_clauses.size(), 1);
+    ASSERT_NE(stmt->where, nullptr);
+
+    auto* bin = dynamic_cast<BinaryExpr*>(stmt->where.get());
+    ASSERT_NE(bin, nullptr);
+    EXPECT_EQ(bin->op, "=");
+}
+
+TEST(ParserUpdate, WithSemicolon) {
+    std::unique_ptr<AstNode> ast;
+    auto* stmt = parse_update("UPDATE users SET age = 1;", ast);
+
+    ASSERT_NE(stmt, nullptr);
+    EXPECT_EQ(stmt->table_name, "users");
+}
+
+TEST(ParserUpdate, CaseInsensitive) {
+    std::unique_ptr<AstNode> ast;
+    auto* stmt = parse_update("update users set age = 1", ast);
+
+    ASSERT_NE(stmt, nullptr);
+    EXPECT_EQ(stmt->table_name, "users");
+}
+
+TEST(ParserUpdate, ComplexWhere) {
+    std::unique_ptr<AstNode> ast;
+    auto* stmt = parse_update(
+        "UPDATE users SET name = 'X' WHERE age > 30 AND id != 1", ast);
+
+    ASSERT_NE(stmt, nullptr);
+    auto* top = dynamic_cast<BinaryExpr*>(stmt->where.get());
+    ASSERT_NE(top, nullptr);
+    EXPECT_EQ(top->op, "AND");
+}
+
+TEST(ParserUpdate, MissingSet) {
+    EXPECT_THROW(Parser::Parse("UPDATE users name = 'X'"), DbError);
+}
+
+TEST(ParserUpdate, MissingTable) {
+    EXPECT_THROW(Parser::Parse("UPDATE SET name = 'X'"), DbError);
+}

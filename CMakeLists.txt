@@ -38,6 +38,7 @@ add_library(main
     src/executor/operators/projection_op.cpp
     src/executor/operators/limit_op.cpp
     src/executor/operators/insert_op.cpp
+    src/executor/operators/update_op.cpp
     src/executor/operators/delete_op.cpp
     src/executor/predicate.cpp
     src/executor/executor.cpp

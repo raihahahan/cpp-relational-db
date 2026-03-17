@@ -402,3 +402,80 @@ TEST_F(AnalyzerTest, InsertUndefinedTableThrows) {
         EXPECT_EQ(e.code(), ErrorCode::UndefinedTable);
     }
 }
+
+
+// UPDATE analysis
+TEST_F(AnalyzerTest, UpdateResolvesTable) {
+    auto stmt = analyze_stmt("UPDATE users SET name = 'Bob' WHERE id = 1");
+
+    ASSERT_EQ(stmt->type, StmtType::Update);
+    ASSERT_NE(stmt->update_query, nullptr);
+    EXPECT_EQ(stmt->update_query->table.table_name, "users");
+}
+
+TEST_F(AnalyzerTest, UpdateResolvesSetColumn) {
+    auto stmt = analyze_stmt("UPDATE users SET name = 'Bob' WHERE id = 1");
+
+    ASSERT_EQ(stmt->update_query->assignments.size(), 1);
+    EXPECT_EQ(stmt->update_query->assignments[0].first.col_name, "name");
+}
+
+TEST_F(AnalyzerTest, UpdateMultipleSetClauses) {
+    auto stmt = analyze_stmt(
+        "UPDATE users SET name = 'Bob', age = 40 WHERE id = 1");
+
+    ASSERT_EQ(stmt->update_query->assignments.size(), 2);
+    EXPECT_EQ(stmt->update_query->assignments[0].first.col_name, "name");
+    EXPECT_EQ(stmt->update_query->assignments[1].first.col_name, "age");
+}
+
+TEST_F(AnalyzerTest, UpdateAllRows) {
+    auto stmt = analyze_stmt("UPDATE users SET age = 99");
+
+    ASSERT_EQ(stmt->type, StmtType::Update);
+    EXPECT_EQ(stmt->update_query->where_clause, nullptr);
+}
+
+TEST_F(AnalyzerTest, UpdateWithWhere) {
+    auto stmt = analyze_stmt("UPDATE users SET age = 99 WHERE id = 1");
+
+    ASSERT_NE(stmt->update_query->where_clause, nullptr);
+    auto* bin = dynamic_cast<AnalyzedBinaryExpr*>(
+        stmt->update_query->where_clause.get());
+    ASSERT_NE(bin, nullptr);
+    EXPECT_EQ(bin->op, "=");
+}
+
+TEST_F(AnalyzerTest, UpdateTypeMismatchThrows) {
+    EXPECT_THROW(
+        analyze_stmt("UPDATE users SET id = 'bad' WHERE id = 1"),
+        DbError);
+
+    try {
+        analyze_stmt("UPDATE users SET id = 'bad' WHERE id = 1");
+    } catch (const DbError& e) {
+        EXPECT_EQ(e.code(), ErrorCode::TypeMismatch);
+    }
+}
+
+TEST_F(AnalyzerTest, UpdateUndefinedColumnThrows) {
+    EXPECT_THROW(
+        analyze_stmt("UPDATE users SET bad_col = 1"), DbError);
+
+    try {
+        analyze_stmt("UPDATE users SET bad_col = 1");
+    } catch (const DbError& e) {
+        EXPECT_EQ(e.code(), ErrorCode::UndefinedColumn);
+    }
+}
+
+TEST_F(AnalyzerTest, UpdateUndefinedTableThrows) {
+    EXPECT_THROW(
+        analyze_stmt("UPDATE ghosts SET x = 1"), DbError);
+
+    try {
+        analyze_stmt("UPDATE ghosts SET x = 1");
+    } catch (const DbError& e) {
+        EXPECT_EQ(e.code(), ErrorCode::UndefinedTable);
+    }
+}

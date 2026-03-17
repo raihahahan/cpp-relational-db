@@ -13,6 +13,7 @@ private:
     // statement parsing
     std::unique_ptr<SelectStmt> parse_select_stmt();
     std::unique_ptr<InsertStmt> parse_insert_stmt();
+    std::unique_ptr<UpdateStmt> parse_update_stmt();
     std::unique_ptr<DeleteStmt> parse_delete_stmt();
 
     // target list

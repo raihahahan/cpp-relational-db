@@ -6,6 +6,7 @@
 #include "planner/logical/nodes/project.h"
 #include "planner/logical/nodes/limit.h"
 #include "planner/logical/nodes/insert_node.h"
+#include "planner/logical/nodes/update_node.h"
 #include "planner/logical/nodes/delete_node.h"
 
 #include "executor/operators/seq_scan_op.h"
@@ -13,6 +14,7 @@
 #include "executor/operators/limit_op.h"
 #include "executor/operators/projection_op.h"
 #include "executor/operators/insert_op.h"
+#include "executor/operators/update_op.h"
 #include "executor/operators/delete_op.h"
 #include "executor/predicate.h"
 #include "parser/analyzer.h"
@@ -272,6 +274,15 @@ EvaluateInsertValues(const logical::LogicalInsert& ins) {
     return rows;
 }
 
+std::vector<std::pair<uint16_t, common::Value>>
+EvaluateAssignments(const logical::LogicalUpdate& upd) {
+    std::vector<std::pair<uint16_t, common::Value>> result;
+    for (const auto& [col, expr] : upd.Assignments()) {
+        result.emplace_back(col.ordinal_position, EvaluateExprToValue(*expr));
+    }
+    return result;
+}
+
 // PhysicalPlanner::Build
 std::unique_ptr<executor::Operator>
 PhysicalPlanner::Build(const LogicalPlan &plan, PlanningContext &ctx) {
@@ -312,6 +323,15 @@ PhysicalPlanner::Build(const LogicalPlan &plan, PlanningContext &ctx) {
         auto table = ctx.table_mgr->OpenTable(ins.TableName());
         auto rows = EvaluateInsertValues(ins);
         return std::make_unique<executor::InsertOp>(table, std::move(rows));
+    }
+
+    case LogicalPlanType::Update: {
+        auto& upd = static_cast<const logical::LogicalUpdate&>(plan);
+        auto table = ctx.table_mgr->OpenTable(upd.TableName());
+        auto child_op = Build(upd.Child(), ctx);
+        auto assignments = EvaluateAssignments(upd);
+        return std::make_unique<executor::UpdateOp>(
+            std::move(child_op), table, std::move(assignments));
     }
 
     case LogicalPlanType::Delete: {

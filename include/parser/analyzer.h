@@ -61,6 +61,14 @@ struct AnalyzedInsert {
     std::vector<std::vector<std::unique_ptr<AnalyzedExpr>>> values;
 };
 
+// Analyzed UPDATE output
+struct AnalyzedUpdate {
+    catalog::TableInfo table;
+    std::vector<catalog::ColumnInfo> table_columns;
+    std::vector<std::pair<catalog::ColumnInfo, std::unique_ptr<AnalyzedExpr>>> assignments;
+    std::unique_ptr<AnalyzedExpr> where_clause; // nullable
+};
+
 // Analyzed DELETE output
 struct AnalyzedDelete {
     catalog::TableInfo table;
@@ -76,6 +84,7 @@ struct AnalyzedStmt {
     StmtType type;
     std::unique_ptr<Query> select_query;
     std::unique_ptr<AnalyzedInsert> insert_query;
+    std::unique_ptr<AnalyzedUpdate> update_query;
     std::unique_ptr<AnalyzedDelete> delete_query;
 };
 
@@ -92,6 +101,7 @@ public:
 private:
     std::unique_ptr<Query> analyze_select(const SelectStmt& stmt);
     std::unique_ptr<AnalyzedInsert> analyze_insert(const InsertStmt& stmt);
+    std::unique_ptr<AnalyzedUpdate> analyze_update(const UpdateStmt& stmt);
     std::unique_ptr<AnalyzedDelete> analyze_delete(const DeleteStmt& stmt);
 
     // Name resolution

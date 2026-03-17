@@ -107,6 +107,8 @@ int main() {
                 planner::LogicalPlanPtr logical_plan;
                 if (stmt->type == parser::StmtType::Insert) {
                     logical_plan = planner::LogicalPlanner::Build(*stmt->insert_query);
+                } else if (stmt->type == parser::StmtType::Update) {
+                    logical_plan = planner::LogicalPlanner::Build(*stmt->update_query);
                 } else if (stmt->type == parser::StmtType::Delete) {
                     logical_plan = planner::LogicalPlanner::Build(*stmt->delete_query);
                 }
