@@ -83,4 +83,9 @@ struct CreateTableStmt : AstNode {
     std::vector<ColumnDef> columns;
 };
 
+struct DropTableStmt : AstNode {
+    std::string table_name;
+    bool if_exists = false;
+};
+
 }

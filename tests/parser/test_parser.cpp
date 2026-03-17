@@ -663,3 +663,32 @@ TEST(ParserCreateTable, MissingParensThrows) {
 TEST(ParserCreateTable, MissingTableKeyword) {
     EXPECT_THROW(Parser::Parse("CREATE t (id INT)"), DbError);
 }
+
+
+// ========== DROP TABLE ==========
+
+static DropTableStmt* parse_drop(const std::string& sql,
+                                 std::unique_ptr<AstNode>& owner) {
+    owner = Parser::Parse(sql);
+    return dynamic_cast<DropTableStmt*>(owner.get());
+}
+
+TEST(ParserDropTable, Basic) {
+    std::unique_ptr<AstNode> ast;
+    auto* stmt = parse_drop("DROP TABLE t", ast);
+    ASSERT_NE(stmt, nullptr);
+    EXPECT_EQ(stmt->table_name, "t");
+    EXPECT_FALSE(stmt->if_exists);
+}
+
+TEST(ParserDropTable, IfExists) {
+    std::unique_ptr<AstNode> ast;
+    auto* stmt = parse_drop("DROP TABLE IF EXISTS items", ast);
+    ASSERT_NE(stmt, nullptr);
+    EXPECT_EQ(stmt->table_name, "items");
+    EXPECT_TRUE(stmt->if_exists);
+}
+
+TEST(ParserDropTable, MissingTableKeyword) {
+    EXPECT_THROW(Parser::Parse("DROP t"), DbError);
+}

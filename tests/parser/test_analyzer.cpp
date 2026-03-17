@@ -517,3 +517,21 @@ TEST_F(AnalyzerTest, CreateTableEmptyColumnsThrows) {
     EXPECT_THROW(
         analyze_stmt("CREATE TABLE t ()"), DbError);
 }
+
+
+// ========== DROP TABLE ==========
+
+TEST_F(AnalyzerTest, DropTableNonexistentThrows) {
+    EXPECT_THROW(analyze_stmt("DROP TABLE ghost"), DbError);
+}
+
+TEST_F(AnalyzerTest, DropTableNonexistentIfExistsSucceeds) {
+    auto stmt = analyze_stmt("DROP TABLE IF EXISTS ghost");
+    ASSERT_EQ(stmt->type, StmtType::DropTable);
+    ASSERT_NE(stmt->drop_table, nullptr);
+    EXPECT_FALSE(stmt->drop_table->table_found);
+}
+
+TEST_F(AnalyzerTest, DropTableSystemTableThrows) {
+    EXPECT_THROW(analyze_stmt("DROP TABLE db_tables"), DbError);
+}

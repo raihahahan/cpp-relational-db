@@ -101,8 +101,10 @@ std::unique_ptr<AstNode> Parser::Parse(const std::string& sql) {
         stmt = parser.parse_delete_stmt();
     else if (parser.check_keyword("create"))
         stmt = parser.parse_create_table_stmt();
+    else if (parser.check_keyword("drop"))
+        stmt = parser.parse_drop_table_stmt();
     else
-        parser.error("expected SELECT, INSERT, UPDATE, DELETE, or CREATE, got '" +
+        parser.error("expected SELECT, INSERT, UPDATE, DELETE, CREATE, or DROP, got '" +
                      std::string(parser.peek().lexeme) + "'");
 
     if (!parser.at_end() && !parser.check(TokenType::Semicolon)) {
@@ -457,6 +459,25 @@ std::unique_ptr<CreateTableStmt> Parser::parse_create_table_stmt() {
     } while (check(TokenType::Comma) && (advance(), true));
 
     consume(TokenType::RParen);
+
+    return stmt;
+}
+
+// DROP TABLE statement
+std::unique_ptr<DropTableStmt> Parser::parse_drop_table_stmt() {
+    consume_keyword("drop");
+    consume_keyword("table");
+
+    auto stmt = std::make_unique<DropTableStmt>();
+
+    if (check_keyword("if")) {
+        advance();
+        consume_keyword("exists");
+        stmt->if_exists = true;
+    }
+
+    Token table_tok = consume(TokenType::Identifier);
+    stmt->table_name = std::string(table_tok.lexeme);
 
     return stmt;
 }

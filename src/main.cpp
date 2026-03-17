@@ -40,7 +40,7 @@ static void print_tuple(const common::Tuple &t) {
 }
 
 int main() {
-    const std::string db_file = "sql_engine.db";
+    const std::string db_file = "../sql_engine.db";
 
     storage::DiskManager dm{db_file};
     storage::BufferManager bm{storage::ReplacementPolicyType::CLOCK, &dm};
@@ -48,27 +48,31 @@ int main() {
     catalog.Init();
     model::TableManager table_mgr{&catalog};
 
-    // Seed a sample table: users(id INT, name TEXT, age INT)
-    std::vector<catalog::RawColumnInfo> schema = {
-        {"id", catalog::INT_TYPE, 1},
-        {"name", catalog::TEXT_TYPE, 2},
-        {"age", catalog::INT_TYPE, 3},
-    };
-    table_mgr.CreateTable("users", schema);
-    auto users = table_mgr.OpenTable("users");
-    users->Insert({common::Value{uint32_t(1)}, common::Value{std::string("Alice")},
-                   common::Value{uint32_t(30)}});
-    users->Insert({common::Value{uint32_t(2)}, common::Value{std::string("Bob")},
-                   common::Value{uint32_t(25)}});
-    users->Insert({common::Value{uint32_t(3)}, common::Value{std::string("Carol")},
-                   common::Value{uint32_t(35)}});
-    users->Insert({common::Value{uint32_t(4)}, common::Value{std::string("Dave")},
-                   common::Value{uint32_t(28)}});
-    users->Insert({common::Value{uint32_t(5)}, common::Value{std::string("Eve")},
-                   common::Value{uint32_t(22)}});
+    // Seed only if users table doesn't exist (fresh database)
+    if (!catalog.LookupTable("users").has_value()) {
+        // Seed a sample table: users(id INT, name TEXT, age INT)
+        std::vector<catalog::RawColumnInfo> schema = {
+            {"id", catalog::INT_TYPE, 1},
+            {"name", catalog::TEXT_TYPE, 2},
+            {"age", catalog::INT_TYPE, 3},
+        };
+        table_mgr.CreateTable("users", schema);
+        auto users = table_mgr.OpenTable("users");
+        users->Insert({common::Value{uint32_t(1)}, common::Value{std::string("Alice")},
+                    common::Value{uint32_t(30)}});
+        users->Insert({common::Value{uint32_t(2)}, common::Value{std::string("Bob")},
+                    common::Value{uint32_t(25)}});
+        users->Insert({common::Value{uint32_t(3)}, common::Value{std::string("Carol")},
+                    common::Value{uint32_t(35)}});
+        users->Insert({common::Value{uint32_t(4)}, common::Value{std::string("Dave")},
+                    common::Value{uint32_t(28)}});
+        users->Insert({common::Value{uint32_t(5)}, common::Value{std::string("Eve")},
+                    common::Value{uint32_t(22)}});
 
-    std::cout << "SQL Engine ready. Table 'users' seeded with 5 rows.\n";
-    std::cout << "Columns: id (INT), name (TEXT), age (INT)\n";
+        std::cout << "SQL Engine ready. Table 'users' seeded with 5 rows.\n";
+        std::cout << "Columns: id (INT), name (TEXT), age (INT)\n";
+    }
+
     std::cout << "Enter SQL (one line) or 'quit':\n\n";
 
     std::string line;
@@ -90,6 +94,10 @@ int main() {
             if (stmt->type == parser::StmtType::CreateTable) {
                 auto result = executor::ExecuteCreateTable(
                     *stmt->create_table, table_mgr);
+                std::cout << result.message << "\n\n";
+            } else if (stmt->type == parser::StmtType::DropTable) {
+                auto result = executor::ExecuteDropTable(
+                    *stmt->drop_table, catalog, table_mgr);
                 std::cout << result.message << "\n\n";
             } else if (stmt->type == parser::StmtType::Select) {
                 auto logical_plan = planner::LogicalPlanner::Build(*stmt->select_query);

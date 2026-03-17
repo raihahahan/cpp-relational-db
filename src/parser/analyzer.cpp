@@ -81,6 +81,11 @@ std::unique_ptr<AnalyzedStmt> Analyzer::Analyze(const AstNode& parse_tree) {
         result->create_table = analyze_create_table(*ct);
         return result;
     }
+    if (auto* dt = dynamic_cast<const DropTableStmt*>(&parse_tree)) {
+        result->type = StmtType::DropTable;
+        result->drop_table = analyze_drop_table(*dt);
+        return result;
+    }
 
     throw DbError(ErrorCode::ParseError, "unsupported statement type");
 }
@@ -494,6 +499,35 @@ std::unique_ptr<AnalyzedCreateTable> Analyzer::analyze_create_table(const Create
         ++ordinal;
     }
 
+    return result;
+}
+
+std::unique_ptr<AnalyzedDropTable> Analyzer::analyze_drop_table(
+    const DropTableStmt& stmt) {
+    auto result = std::make_unique<AnalyzedDropTable>();
+    result->table_name = stmt.table_name;
+    result->if_exists = stmt.if_exists;
+
+    auto existing = _catalog.LookupTable(stmt.table_name);
+
+    if (!existing.has_value()) {
+        if (stmt.if_exists) {
+            result->table_found = false;
+            return result;
+        }
+        throw DbError(ErrorCode::UndefinedTable,
+                       "table \"" + stmt.table_name + "\" does not exist");
+    }
+
+    if (existing->table_name == catalog::DB_TABLES_TABLE ||
+        existing->table_name == catalog::DB_ATTRIBUTES_TABLE ||
+        existing->table_name == catalog::DB_TYPES_TABLE) {
+        throw DbError(ErrorCode::ParseError,
+                       "cannot drop system table \"" + stmt.table_name + "\"");
+    }
+
+    result->table_found = true;
+    result->table = *existing;
     return result;
 }
 

@@ -48,6 +48,12 @@ protected:
                                          *db_->table_mgr);
             return {};
         }
+        if (stmt->type == parser::StmtType::DropTable) {
+            executor::ExecuteDropTable(*stmt->drop_table,
+                                      *db_->catalog,
+                                      *db_->table_mgr);
+            return {};
+        }
 
         planner::LogicalPlanPtr logical;
         if (stmt->type == parser::StmtType::Select)
@@ -392,4 +398,27 @@ TEST_F(IntegrationTest, CreateTableThenInsertAndSelect) {
 TEST_F(IntegrationTest, CreateTableDuplicateThrows) {
     run("CREATE TABLE items (x INT)");
     EXPECT_THROW(run("CREATE TABLE items (y TEXT)"), DbError);
+}
+
+
+// ========== DROP TABLE integration ==========
+
+TEST_F(IntegrationTest, DropTableThenSelectFails) {
+    run("CREATE TABLE temp (x INT)");
+    run("INSERT INTO temp VALUES (1)");
+    run("DROP TABLE temp");
+    EXPECT_THROW(run("SELECT * FROM temp"), DbError);
+}
+
+TEST_F(IntegrationTest, DropTableIfExistsNonexistent) {
+    run("DROP TABLE IF EXISTS nonexistent");
+}
+
+TEST_F(IntegrationTest, CreateInsertSelectDropSelectRoundTrip) {
+    run("CREATE TABLE round (id INT, name TEXT)");
+    run("INSERT INTO round VALUES (1, 'A')");
+    auto rows = run("SELECT * FROM round");
+    ASSERT_EQ(rows.size(), 1);
+    run("DROP TABLE round");
+    EXPECT_THROW(run("SELECT * FROM round"), DbError);
 }

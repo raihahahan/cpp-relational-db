@@ -17,6 +17,21 @@ std::optional<TableInfo> TablesCatalog::Lookup(std::string_view table_name) {
     return std::nullopt;
 }
 
+bool TablesCatalog::DeleteRowByTableId(table_id_t table_id) {
+    for (auto it = _hf.begin(); it != _hf.end(); ++it) {
+        auto rec = *it;
+        auto bytes = std::span<const uint8_t>{
+            reinterpret_cast<const uint8_t*>(rec.data),
+            rec.size
+        };
+        auto table = codec::TableInfoCodec::Decode(bytes);
+        if (table.table_id == table_id) {
+            return Delete(rec.rid);
+        }
+    }
+    return false;
+}
+
 std::vector<ColumnInfo> AttributesCatalog::GetColumns(table_id_t table_id) {
     std::vector<ColumnInfo> res;
     for (auto it = _hf.begin(); it != _hf.end(); ++it) {
@@ -32,6 +47,24 @@ std::vector<ColumnInfo> AttributesCatalog::GetColumns(table_id_t table_id) {
         }
     }
     return res;
+}
+
+void AttributesCatalog::DeleteRowsByTableId(table_id_t table_id) {
+    std::vector<db::access::RID> rids;
+    for (auto it = _hf.begin(); it != _hf.end(); ++it) {
+        auto rec = *it;
+        auto bytes = std::span<const uint8_t>{
+            reinterpret_cast<const uint8_t*>(rec.data),
+            rec.size
+        };
+        auto col = codec::ColumnInfoCodec::Decode(bytes);
+        if (col.table_id == table_id) {
+            rids.push_back(rec.rid);
+        }
+    }
+    for (const auto& rid : rids) {
+        Delete(rid);
+    }
 }
 
 std::vector<TypeInfo> TypesCatalog::GetTypes() {

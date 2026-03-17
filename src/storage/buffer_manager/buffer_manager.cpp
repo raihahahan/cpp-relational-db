@@ -28,6 +28,14 @@ BufferManager::BufferManager(ReplacementPolicyType type, IDiskManager* dm)
     }
 };
 
+BufferManager::~BufferManager() {
+    try {
+        flush_all();
+    } catch (const std::exception& e) {
+        throw std::runtime_error("Error in BufferManager destructor: " + std::string(e.what()));
+    }
+};
+
 Frame* BufferManager::request(page_id_t pid) {
     auto it = page_table_.find(pid);
 

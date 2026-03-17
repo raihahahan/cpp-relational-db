@@ -65,6 +65,8 @@ public:
     );
 
     std::vector<ColumnInfo> GetTableColumns(table_id_t table_id);
+
+    void DropTable(table_id_t table_id);
     
     // bootstrap
     bool IsInitialised() const;
