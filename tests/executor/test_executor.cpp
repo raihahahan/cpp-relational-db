@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <cstdio>
 
 #include "executor/operators/seq_scan_op.h"
 #include "executor/operators/filter_op.h"
@@ -11,7 +12,9 @@ using namespace db;
 using common::Value;
 
 TEST(ExecutorTest, ExecuteSeqScan) {
-    TestDB db{"exec_execute_seq_scan.db"};
+    auto path = UniqueTestDBPath();
+    std::remove(path.c_str());
+    TestDB db{path};
 
     std::vector<catalog::RawColumnInfo> schema = {
         {"id", catalog::INT_TYPE, 1}
@@ -34,7 +37,9 @@ TEST(ExecutorTest, ExecuteSeqScan) {
 }
 
 TEST(ExecutorTest, ExecuteAndCollectSeqScan) {
-    TestDB db{"exec_collect_seq_scan.db"};
+    auto path = UniqueTestDBPath();
+    std::remove(path.c_str());
+    TestDB db{path};
 
     std::vector<catalog::RawColumnInfo> schema = {
         {"id", catalog::INT_TYPE, 1}
@@ -59,7 +64,9 @@ TEST(ExecutorTest, ExecuteAndCollectSeqScan) {
 }
 
 TEST(ExecutorTest, ExecuteAndCollectWithFilter) {
-    TestDB db{"exec_collect_filter.db"};
+    auto path = UniqueTestDBPath();
+    std::remove(path.c_str());
+    TestDB db{path};
 
     std::vector<catalog::RawColumnInfo> schema = {
         {"id", catalog::INT_TYPE, 1}
@@ -88,7 +95,9 @@ TEST(ExecutorTest, ExecuteAndCollectWithFilter) {
 }
 
 TEST(ExecutorTest, ExecuteAndCollectFullPipeline) {
-    TestDB db{"exec_collect_pipeline.db"};
+    auto path = UniqueTestDBPath();
+    std::remove(path.c_str());
+    TestDB db{path};
 
     std::vector<catalog::RawColumnInfo> schema = {
         {"id", catalog::INT_TYPE, 1},

@@ -1,4 +1,6 @@
 #include <gtest/gtest.h>
+#include <cstdio>
+
 #include "executor/operators/seq_scan_op.h"
 #include "executor/operators/filter_op.h"
 #include "executor/operators/projection_op.h"
@@ -12,7 +14,11 @@ using catalog::ColumnInfo;
 class DMLFoundationTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        db = std::make_unique<TestDB>("dml_foundation_test.db");
+        auto* info = ::testing::UnitTest::GetInstance()->current_test_info();
+        db_path_ = std::string("dml_foundation_") + info->test_suite_name() + "_" +
+                   info->name() + ".db";
+        std::remove(db_path_.c_str());
+        db = std::make_unique<TestDB>(db_path_);
 
         std::vector<catalog::RawColumnInfo> cols = {
             {"id", catalog::INT_TYPE, 1},
@@ -28,6 +34,7 @@ protected:
         table->Insert({Value{uint32_t{3}}, Value{"Carol"}, Value{uint32_t{35}}});
     }
 
+    std::string db_path_;
     std::unique_ptr<TestDB> db;
     catalog::table_id_t table_id;
     std::shared_ptr<model::UserTable> table;

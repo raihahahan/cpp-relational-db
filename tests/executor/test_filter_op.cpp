@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <cstdio>
 #include "executor/operators/filter_op.h"
 #include "executor/operators/seq_scan_op.h"
 #include "executor/test_db_helper.h"
@@ -7,7 +8,9 @@ using namespace db;
 using common::Value;
 
 TEST(FilterOpTest, FiltersRows) {
-    TestDB db{"filter_test.db"};
+    auto path = UniqueTestDBPath();
+    std::remove(path.c_str());
+    TestDB db{path};
 
     std::vector<catalog::RawColumnInfo> schema = {
         {"id", catalog::INT_TYPE, 1},
@@ -46,7 +49,9 @@ TEST(FilterOpTest, FiltersRows) {
 }
 
 TEST(CatalogFilterTest, FilterDbTablesByName) {
-    TestDB db{"catalog_filter_tables.db"};
+    auto path = UniqueTestDBPath();
+    std::remove(path.c_str());
+    TestDB db{path};
 
     auto tables_rel = db.catalog->GetTablesCatalog();
     auto scan = std::make_unique<executor::SeqScanOp>(*tables_rel);
@@ -72,7 +77,9 @@ TEST(CatalogFilterTest, FilterDbTablesByName) {
 }
 
 TEST(CatalogFilterTest, FilterAttributesByColumnName) {
-    TestDB db{"catalog_filter_attrs.db"};
+    auto path = UniqueTestDBPath();
+    std::remove(path.c_str());
+    TestDB db{path};
 
     auto attrs_rel = db.catalog->GetAttributesCatalog();
     auto scan = std::make_unique<executor::SeqScanOp>(*attrs_rel);
@@ -100,7 +107,9 @@ TEST(CatalogFilterTest, FilterAttributesByColumnName) {
 }
 
 TEST(CatalogFilterTest, FilterTypesById) {
-    TestDB db{"catalog_filter_types.db"};
+    auto path = UniqueTestDBPath();
+    std::remove(path.c_str());
+    TestDB db{path};
 
     auto types_rel = db.catalog->GetTypesCatalog();
     auto scan = std::make_unique<executor::SeqScanOp>(*types_rel);

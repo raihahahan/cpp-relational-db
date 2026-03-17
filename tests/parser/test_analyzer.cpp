@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <cstdio>
 
 #include "parser/parser.h"
 #include "parser/analyzer.h"
@@ -12,7 +13,11 @@ using namespace db::catalog;
 class AnalyzerTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        db_ = std::make_unique<TestDB>("analyzer_test.db");
+        auto* info = ::testing::UnitTest::GetInstance()->current_test_info();
+        db_path_ = std::string("analyzer_") + info->test_suite_name() + "_" +
+                   info->name() + ".db";
+        std::remove(db_path_.c_str());
+        db_ = std::make_unique<TestDB>(db_path_);
         db_->table_mgr->CreateTable("users", {
             {"id", INT_TYPE, 1},
             {"name", TEXT_TYPE, 2},
@@ -33,6 +38,7 @@ protected:
         return analyzer.Analyze(*ast);
     }
 
+    std::string db_path_;
     std::unique_ptr<TestDB> db_;
 };
 

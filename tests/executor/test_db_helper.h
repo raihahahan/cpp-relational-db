@@ -1,5 +1,9 @@
 #pragma once
 
+#include <cstdio>
+#include <string>
+
+#include <gtest/gtest.h>
 #include "storage/disk_manager/disk_manager.h"
 #include "storage/buffer_manager/buffer_manager.h"
 #include "storage/buffer_manager/replacement_policies/clock_policy.h"
@@ -22,3 +26,9 @@ struct TestDB {
         table_mgr = std::make_unique<db::model::TableManager>(catalog.get());
     }
 };
+
+/** Returns a unique DB path per test. Call std::remove(path.c_str()) before creating TestDB. */
+inline std::string UniqueTestDBPath() {
+    auto* info = ::testing::UnitTest::GetInstance()->current_test_info();
+    return std::string("test_") + info->test_suite_name() + "_" + info->name() + ".db";
+}

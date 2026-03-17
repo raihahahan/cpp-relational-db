@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <cstdio>
 #include "executor/operators/seq_scan_op.h"
 #include "executor/test_db_helper.h"
 #include "catalog/catalog_bootstrap.h"
@@ -7,7 +8,9 @@ using namespace db;
 using common::Value;
 
 TEST(SeqScanOpTest, ScansAllRows) {
-    TestDB db{"seq_scan_test.db"};
+    auto path = UniqueTestDBPath();
+    std::remove(path.c_str());
+    TestDB db{path};
 
     std::vector<catalog::RawColumnInfo> schema = {
         {"id", catalog::INT_TYPE, 1},
@@ -38,7 +41,9 @@ TEST(SeqScanOpTest, ScansAllRows) {
 }
 
 TEST(CatalogSeqScanTest, ScanAllCatalogTables) {
-    TestDB db{"catalog_seq_scan.db"};
+    auto path = UniqueTestDBPath();
+    std::remove(path.c_str());
+    TestDB db{path};
 
     auto tables_rel = db.catalog->GetTablesCatalog();
     auto attrs_rel = db.catalog->GetAttributesCatalog();

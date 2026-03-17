@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <cstdio>
 
 #include "error/dberror.h"
 #include "executor/executor.h"
@@ -16,7 +17,11 @@ using common::Value;
 class IntegrationTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        db_ = std::make_unique<TestDB>("integration_test.db");
+        auto* info = ::testing::UnitTest::GetInstance()->current_test_info();
+        db_path_ = std::string("integration_") + info->test_suite_name() + "_" +
+                   info->name() + ".db";
+        std::remove(db_path_.c_str());
+        db_ = std::make_unique<TestDB>(db_path_);
 
         std::vector<catalog::RawColumnInfo> schema = {
             {"id", catalog::INT_TYPE, 1},
@@ -70,6 +75,7 @@ protected:
         return exec.ExecuteAndCollect();
     }
 
+    std::string db_path_;
     std::unique_ptr<TestDB> db_;
 };
 
