@@ -76,8 +76,22 @@ struct AnalyzedDelete {
     std::unique_ptr<AnalyzedExpr> where_clause; // nullable
 };
 
+// Analyzed CREATE TABLE output
+struct AnalyzedCreateTable {
+    std::string table_name;
+    std::vector<catalog::RawColumnInfo> columns;
+};
+
+// Analyzed DROP TABLE output
+struct AnalyzedDropTable {
+    std::string table_name;
+    bool if_exists;
+    bool table_found;
+    catalog::TableInfo table;
+};
+
 // Statement type tag
-enum class StmtType { Select, Insert, Update, Delete };
+enum class StmtType { Select, Insert, Update, Delete, CreateTable, DropTable };
 
 // Generic wrapper returned by Analyze()
 struct AnalyzedStmt {
@@ -86,6 +100,8 @@ struct AnalyzedStmt {
     std::unique_ptr<AnalyzedInsert> insert_query;
     std::unique_ptr<AnalyzedUpdate> update_query;
     std::unique_ptr<AnalyzedDelete> delete_query;
+    std::unique_ptr<AnalyzedCreateTable> create_table;
+    std::unique_ptr<AnalyzedDropTable> drop_table;
 };
 
 // Deep-copy an AnalyzedExpr tree
@@ -103,6 +119,8 @@ private:
     std::unique_ptr<AnalyzedInsert> analyze_insert(const InsertStmt& stmt);
     std::unique_ptr<AnalyzedUpdate> analyze_update(const UpdateStmt& stmt);
     std::unique_ptr<AnalyzedDelete> analyze_delete(const DeleteStmt& stmt);
+    std::unique_ptr<AnalyzedCreateTable> analyze_create_table(const CreateTableStmt& stmt);
+    std::unique_ptr<AnalyzedDropTable> analyze_drop_table(const DropTableStmt& stmt);
 
     // Name resolution
     catalog::TableInfo resolve_table(const std::string& table_name);

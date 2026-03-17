@@ -591,3 +591,104 @@ TEST(ParserUpdate, MissingSet) {
 TEST(ParserUpdate, MissingTable) {
     EXPECT_THROW(Parser::Parse("UPDATE SET name = 'X'"), DbError);
 }
+
+
+// ========== CREATE TABLE ==========
+
+static CreateTableStmt* parse_create(const std::string& sql,
+                                     std::unique_ptr<AstNode>& owner) {
+    owner = Parser::Parse(sql);
+    return dynamic_cast<CreateTableStmt*>(owner.get());
+}
+
+TEST(ParserCreateTable, BasicTwoColumns) {
+    std::unique_ptr<AstNode> ast;
+    auto* stmt = parse_create("CREATE TABLE t (id INT, name TEXT)", ast);
+    ASSERT_NE(stmt, nullptr);
+    EXPECT_EQ(stmt->table_name, "t");
+    ASSERT_EQ(stmt->columns.size(), 2);
+    EXPECT_EQ(stmt->columns[0].name, "id");
+    EXPECT_EQ(stmt->columns[0].type_name, "INT");
+    EXPECT_EQ(stmt->columns[1].name, "name");
+    EXPECT_EQ(stmt->columns[1].type_name, "TEXT");
+}
+
+TEST(ParserCreateTable, SingleColumn) {
+    std::unique_ptr<AstNode> ast;
+    auto* stmt = parse_create("CREATE TABLE items (price INT)", ast);
+    ASSERT_NE(stmt, nullptr);
+    EXPECT_EQ(stmt->table_name, "items");
+    ASSERT_EQ(stmt->columns.size(), 1);
+    EXPECT_EQ(stmt->columns[0].name, "price");
+    EXPECT_EQ(stmt->columns[0].type_name, "INT");
+}
+
+TEST(ParserCreateTable, ThreeColumns) {
+    std::unique_ptr<AstNode> ast;
+    auto* stmt = parse_create(
+        "CREATE TABLE users (id INT, name TEXT, age INT)", ast);
+    ASSERT_NE(stmt, nullptr);
+    ASSERT_EQ(stmt->columns.size(), 3);
+    EXPECT_EQ(stmt->columns[2].name, "age");
+    EXPECT_EQ(stmt->columns[2].type_name, "INT");
+}
+
+TEST(ParserCreateTable, TrailingSemicolon) {
+    std::unique_ptr<AstNode> ast;
+    auto* stmt = parse_create("CREATE TABLE t (x INT);", ast);
+    ASSERT_NE(stmt, nullptr);
+    EXPECT_EQ(stmt->table_name, "t");
+}
+
+TEST(ParserCreateTable, CaseInsensitiveType) {
+    std::unique_ptr<AstNode> ast;
+    auto* stmt = parse_create("CREATE TABLE t (x int, y Text)", ast);
+    ASSERT_NE(stmt, nullptr);
+    EXPECT_EQ(stmt->columns[0].type_name, "INT");
+    EXPECT_EQ(stmt->columns[1].type_name, "TEXT");
+}
+
+TEST(ParserCreateTable, UnknownTypeThrows) {
+    EXPECT_THROW(Parser::Parse("CREATE TABLE t (x FLOAT)"), DbError);
+}
+
+TEST(ParserCreateTable, EmptyColumnsThrows) {
+    EXPECT_THROW(Parser::Parse("CREATE TABLE t ()"), DbError);
+}
+
+TEST(ParserCreateTable, MissingParensThrows) {
+    EXPECT_THROW(Parser::Parse("CREATE TABLE t id INT"), DbError);
+}
+
+TEST(ParserCreateTable, MissingTableKeyword) {
+    EXPECT_THROW(Parser::Parse("CREATE t (id INT)"), DbError);
+}
+
+
+// ========== DROP TABLE ==========
+
+static DropTableStmt* parse_drop(const std::string& sql,
+                                 std::unique_ptr<AstNode>& owner) {
+    owner = Parser::Parse(sql);
+    return dynamic_cast<DropTableStmt*>(owner.get());
+}
+
+TEST(ParserDropTable, Basic) {
+    std::unique_ptr<AstNode> ast;
+    auto* stmt = parse_drop("DROP TABLE t", ast);
+    ASSERT_NE(stmt, nullptr);
+    EXPECT_EQ(stmt->table_name, "t");
+    EXPECT_FALSE(stmt->if_exists);
+}
+
+TEST(ParserDropTable, IfExists) {
+    std::unique_ptr<AstNode> ast;
+    auto* stmt = parse_drop("DROP TABLE IF EXISTS items", ast);
+    ASSERT_NE(stmt, nullptr);
+    EXPECT_EQ(stmt->table_name, "items");
+    EXPECT_TRUE(stmt->if_exists);
+}
+
+TEST(ParserDropTable, MissingTableKeyword) {
+    EXPECT_THROW(Parser::Parse("DROP t"), DbError);
+}

@@ -11,6 +11,7 @@ enum class ReplacementPolicyType { CLOCK };
 class BufferManager {
 public:
     BufferManager(ReplacementPolicyType type, IDiskManager* dm);
+    ~BufferManager();
 
     Frame* request(page_id_t pid);
     void release(page_id_t pid);

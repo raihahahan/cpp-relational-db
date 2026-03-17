@@ -19,6 +19,7 @@ public:
     explicit Relation(HeapFile hf);
     std::optional<RID> InsertRaw(std::span<const uint8_t> bytes, size_t len);
     HeapIterator Begin();
+    bool Delete(const RID& rid);
     virtual Tuple Decode(const Record& rec) const  = 0;
 protected:
     HeapFile _hf;

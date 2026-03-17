@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <cstdio>
 #include "executor/operators/projection_op.h"
 #include "executor/operators/seq_scan_op.h"
 #include "executor/test_db_helper.h"
@@ -7,7 +8,9 @@ using namespace db;
 using common::Value;
 
 TEST(ProjectionOpTest, ProjectsColumns) {
-    TestDB db{"projection_test.db"};
+    auto path = UniqueTestDBPath();
+    std::remove(path.c_str());
+    TestDB db{path};
 
     std::vector<catalog::RawColumnInfo> schema = {
         {"id", catalog::INT_TYPE, 1},
@@ -48,7 +51,9 @@ TEST(ProjectionOpTest, ProjectsColumns) {
 }
 
 TEST(CatalogProjectionTest, ProjectDbTableNames) {
-    TestDB db{"catalog_proj_tables.db"};
+    auto path = UniqueTestDBPath();
+    std::remove(path.c_str());
+    TestDB db{path};
 
     auto tables_rel = db.catalog->GetTablesCatalog();
     auto scan = executor::SeqScanOp(*tables_rel);
@@ -87,7 +92,9 @@ TEST(CatalogProjectionTest, ProjectDbTableNames) {
 }
 
 TEST(CatalogProjectionTest, ProjectAttributeNames) {
-    TestDB db{"catalog_proj_attrs.db"};
+    auto path = UniqueTestDBPath();
+    std::remove(path.c_str());
+    TestDB db{path};
 
     auto attrs_rel = db.catalog->GetAttributesCatalog();
     auto scan = executor::SeqScanOp(*attrs_rel);
@@ -115,7 +122,9 @@ TEST(CatalogProjectionTest, ProjectAttributeNames) {
 }
 
 TEST(CatalogProjectionTest, ProjectTypeSizes) {
-    TestDB db{"catalog_proj_types.db"};
+    auto path = UniqueTestDBPath();
+    std::remove(path.c_str());
+    TestDB db{path};
 
     auto types_rel = db.catalog->GetTypesCatalog();
     auto scan = std::make_unique<executor::SeqScanOp>(*types_rel);

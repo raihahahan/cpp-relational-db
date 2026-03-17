@@ -11,6 +11,7 @@ public:
     explicit TableManager(catalog::Catalog* catalog);
     std::shared_ptr<UserTable> OpenTable(std::string name);
     table_id_t CreateTable(const std::string& table_name, const std::vector<catalog::RawColumnInfo>& columns);
+    void EvictTable(const std::string& name);
 
 private:
     std::unordered_map<std::string, std::shared_ptr<UserTable>> _cache;

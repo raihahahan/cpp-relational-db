@@ -203,6 +203,17 @@ public:
 | `Execute()`           | Fire-and-forget (e.g. INSERT, DELETE) |
 | `ExecuteAndCollect()` | SELECT queries                        |
 
+## 6. Utility Commands (DDL)
+
+DDL statements (CREATE TABLE, DROP TABLE) bypass the planner and are executed directly via utility functions in `executor/utility.h`:
+
+| Function               | Purpose                                      |
+| ---------------------- | -------------------------------------------- |
+| `ExecuteCreateTable()` | Creates a table via TableManager and Catalog  |
+| `ExecuteDropTable()`   | Drops a table, evicts from cache, deletes metadata |
+
+These return a `CommandResult` with a confirmation message rather than tuples.
+
 ## 5. Ownership & Pointer Semantics
 
 | Component         | Ownership                       | Reason                          |

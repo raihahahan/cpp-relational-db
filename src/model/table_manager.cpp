@@ -22,4 +22,8 @@ std::shared_ptr<UserTable> TableManager::OpenTable(std::string name) {
 table_id_t TableManager::CreateTable(const std::string& table_name, const std::vector<catalog::RawColumnInfo>& columns) {
     return _catalog->CreateTable(table_name, columns);
 }
+
+void TableManager::EvictTable(const std::string& name) {
+    _cache.erase(name);
+}
 }

@@ -1,7 +1,9 @@
 #include <gtest/gtest.h>
+#include <cstdio>
 
 #include "error/dberror.h"
 #include "executor/executor.h"
+#include "executor/utility.h"
 #include "executor/test_db_helper.h"
 #include "parser/analyzer.h"
 #include "parser/lexer.h"
@@ -15,7 +17,11 @@ using common::Value;
 class IntegrationTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        db_ = std::make_unique<TestDB>("integration_test.db");
+        auto* info = ::testing::UnitTest::GetInstance()->current_test_info();
+        db_path_ = std::string("integration_") + info->test_suite_name() + "_" +
+                   info->name() + ".db";
+        std::remove(db_path_.c_str());
+        db_ = std::make_unique<TestDB>(db_path_);
 
         std::vector<catalog::RawColumnInfo> schema = {
             {"id", catalog::INT_TYPE, 1},
@@ -42,6 +48,18 @@ protected:
         auto stmt = analyzer.Analyze(*ast);
         planner::PlanningContext ctx{db_->table_mgr.get()};
 
+        if (stmt->type == parser::StmtType::CreateTable) {
+            executor::ExecuteCreateTable(*stmt->create_table,
+                                         *db_->table_mgr);
+            return {};
+        }
+        if (stmt->type == parser::StmtType::DropTable) {
+            executor::ExecuteDropTable(*stmt->drop_table,
+                                      *db_->catalog,
+                                      *db_->table_mgr);
+            return {};
+        }
+
         planner::LogicalPlanPtr logical;
         if (stmt->type == parser::StmtType::Select)
             logical = planner::LogicalPlanner::Build(*stmt->select_query);
@@ -57,6 +75,7 @@ protected:
         return exec.ExecuteAndCollect();
     }
 
+    std::string db_path_;
     std::unique_ptr<TestDB> db_;
 };
 
@@ -363,4 +382,49 @@ TEST_F(IntegrationTest, DmlFullLifecycle) {
     // 7. Final count: original 5 + 2 inserted - 1 deleted = 6
     auto final_rows = run("SELECT * FROM users");
     EXPECT_EQ(final_rows.size(), 6);
+}
+
+
+// ========== CREATE TABLE integration ==========
+
+TEST_F(IntegrationTest, CreateTableThenInsertAndSelect) {
+    run("CREATE TABLE products (id INT, label TEXT)");
+
+    run("INSERT INTO products VALUES (1, 'Widget')");
+    run("INSERT INTO products VALUES (2, 'Gadget')");
+
+    auto rows = run("SELECT * FROM products");
+    ASSERT_EQ(rows.size(), 2);
+    EXPECT_EQ(std::get<uint32_t>(rows[0].GetValues()[0]), 1);
+    EXPECT_EQ(std::get<std::string>(rows[0].GetValues()[1]), "Widget");
+    EXPECT_EQ(std::get<uint32_t>(rows[1].GetValues()[0]), 2);
+    EXPECT_EQ(std::get<std::string>(rows[1].GetValues()[1]), "Gadget");
+}
+
+TEST_F(IntegrationTest, CreateTableDuplicateThrows) {
+    run("CREATE TABLE items (x INT)");
+    EXPECT_THROW(run("CREATE TABLE items (y TEXT)"), DbError);
+}
+
+
+// ========== DROP TABLE integration ==========
+
+TEST_F(IntegrationTest, DropTableThenSelectFails) {
+    run("CREATE TABLE temp (x INT)");
+    run("INSERT INTO temp VALUES (1)");
+    run("DROP TABLE temp");
+    EXPECT_THROW(run("SELECT * FROM temp"), DbError);
+}
+
+TEST_F(IntegrationTest, DropTableIfExistsNonexistent) {
+    run("DROP TABLE IF EXISTS nonexistent");
+}
+
+TEST_F(IntegrationTest, CreateInsertSelectDropSelectRoundTrip) {
+    run("CREATE TABLE round (id INT, name TEXT)");
+    run("INSERT INTO round VALUES (1, 'A')");
+    auto rows = run("SELECT * FROM round");
+    ASSERT_EQ(rows.size(), 1);
+    run("DROP TABLE round");
+    EXPECT_THROW(run("SELECT * FROM round"), DbError);
 }

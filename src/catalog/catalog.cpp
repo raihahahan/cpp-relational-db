@@ -49,6 +49,11 @@ std::vector<ColumnInfo> Catalog::GetTableColumns(table_id_t table_id) {
     return _attributes.value().GetColumns(table_id);
 }
 
+void Catalog::DropTable(table_id_t table_id) {
+    _attributes.value().DeleteRowsByTableId(table_id);
+    _tables.value().DeleteRowByTableId(table_id);
+}
+
 // bootstrapping
 bool Catalog::IsInitialised() const {
     if (_dm->GetNumPages() <= 0) return false;

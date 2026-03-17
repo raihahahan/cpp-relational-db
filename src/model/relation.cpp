@@ -11,4 +11,8 @@ std::optional<RID> Relation::InsertRaw(std::span<const uint8_t> bytes, size_t le
 HeapIterator Relation::Begin() {
     return _hf.begin();
 }
+
+bool Relation::Delete(const RID& rid) {
+    return _hf.Delete(rid);
+}
 }

@@ -28,7 +28,7 @@ enum class TokenType {
 
 std::string_view ToString(TokenType type);
 
-inline constexpr std::array<std::pair<std::string_view, TokenType>, 40>
+inline constexpr std::array<std::pair<std::string_view, TokenType>, 42>
     keywords = {{
         {"select", TokenType::Keyword},
         {"from", TokenType::Keyword},
@@ -75,6 +75,8 @@ inline constexpr std::array<std::pair<std::string_view, TokenType>, 40>
         // near-future: DDL
         {"primary", TokenType::Keyword},
         {"key", TokenType::Keyword},
+        {"drop", TokenType::Keyword},
+        {"if", TokenType::Keyword},
     }};
 
 struct Token {

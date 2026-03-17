@@ -14,6 +14,7 @@ public:
     using Base::Base;
 
     std::optional<TableInfo> Lookup(std::string_view table_name);
+    bool DeleteRowByTableId(table_id_t table_id);
 };
 
 // db_attributes
@@ -24,6 +25,7 @@ public:
     using Base::Base;
 
     std::vector<ColumnInfo> GetColumns(table_id_t table_id);
+    void DeleteRowsByTableId(table_id_t table_id);
 };
 
 // db_types
