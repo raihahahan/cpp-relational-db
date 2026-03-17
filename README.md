@@ -20,7 +20,7 @@ This database system is built as a layered architecture, where each layer abstra
 3. Catalog Layer: Creates and provides metadata information for the database (i.e info about tables, attributes, types) (done)
 4. Model Layer: Schema aware layer to create and insert rows into user tables in the database (done)
 5. Executor Layer: Physical operators (scan, filter, project, limit) using the Volcano iterator model (done)
-6. Parser Layer: Lexer, recursive descent parser, and semantic analyzer - SQL string to validated query (partially done, only SELECT query)
+6. Parser Layer: Lexer, recursive descent parser, and semantic analyzer - SQL string to validated query (done, supports SELECT, INSERT, UPDATE, DELETE)
 7. Planner Layer: Logical and physical planners — converts analyzed queries into executable operator trees (done)
 8. Concurrency Control
 9. Recoverability Manager
@@ -187,6 +187,9 @@ While the model layer focuses on how data is stored and represented, the executo
 | **FilterOp**     | Applies predicates to tuples flowing from its child operator.            |
 | **ProjectionOp** | Selects a subset of columns and produces reshaped tuples.                |
 | **LimitOp**      | Restricts the number of tuples produced by its child operator.           |
+| **DeleteOp**     | Deletes matching tuples from a table, returns affected row count.        |
+| **InsertOp**     | Inserts new tuples into a table, returns affected row count.             |
+| **UpdateOp**     | Updates matching tuples in a table, returns affected row count.          |
 
 ### Responsibilities
 
@@ -236,18 +239,18 @@ For detailed documentation, see the [executor/README.md](src/executor/README.md)
 
 The **parser layer** transforms a raw SQL string into a fully validated and type-checked query representation. It follows PostgreSQL's parsing architecture: Lexer -> Parser -> Semantic Analyzer.
 
-| Component    | Description                                                                           |
-| ------------ | ------------------------------------------------------------------------------------- |
-| **Lexer**    | Tokenises SQL input into keywords, identifiers, literals, operators, and punctuation. |
-| **Parser**   | Recursive descent parser that builds a raw AST (`SelectStmt`) from the token stream.  |
-| **Analyzer** | Resolves table/column names against the Catalog, checks types, and expands wildcards. |
-| **AST**      | Intermediate parse tree with unresolved names (`ColumnRef`, `Literal`, `BinaryExpr`). |
-| **Query**    | Final output of analysis — fully resolved with `TableInfo`, `ColumnInfo`, and types.  |
+| Component        | Description                                                                               |
+| ---------------- | ----------------------------------------------------------------------------------------- |
+| **Lexer**        | Tokenises SQL input into keywords, identifiers, literals, operators, and punctuation.     |
+| **Parser**       | Recursive descent parser that builds a raw AST from the token stream.                     |
+| **Analyzer**     | Resolves table/column names against the Catalog, checks types, and expands wildcards.     |
+| **AST**          | Intermediate parse tree with unresolved names (`ColumnRef`, `Literal`, `BinaryExpr`).     |
+| **AnalyzedStmt** | Final output of analysis, fully resolved with `TableInfo`, `ColumnInfo`, and types.       |
 
 ### Responsibilities
 
 - **Lexical Analysis**: Recognises 40 SQL keywords (case-insensitive), string literals with `''` escaping, two-character operators (`<=`, `>=`, `!=`, `<>`), and dot-qualified identifiers.
-- **Syntactic Analysis**: Parses `SELECT` statements with target lists (including `*` and aliases), `FROM`, `WHERE`, and `LIMIT` clauses. Implements operator precedence via precedence climbing.
+- **Syntactic Analysis**: Parses SELECT, INSERT, UPDATE, and DELETE statements. Implements operator precedence via precedence climbing.
 - **Semantic Analysis**: Validates table and column references against the Catalog, enforces type compatibility rules for comparisons and arithmetic, and expands `SELECT *` into individual columns.
 - **Error Reporting**: Produces positioned error messages with codes (`SyntaxError`, `ParseError`, `UndefinedTable`, `UndefinedColumn`, `TypeMismatch`).
 
@@ -255,34 +258,48 @@ For detailed documentation, see the [parser/README.md](src/parser/README.md).
 
 ## Planner Layer Overview
 
-The **planner layer** converts an analyzed `Query` into an executable operator tree. It is split into two stages: logical planning (what to do) and physical planning (how to do it).
+The **planner layer** converts an `AnalyzedStmt` into an executable operator tree. It is split into two stages: logical planning (what to do) and physical planning (how to do it).
 
 | Component            | Description                                                                        |
 | -------------------- | ---------------------------------------------------------------------------------- |
-| **LogicalPlanner**   | Builds a tree of logical nodes (Scan, Filter, Project, Limit) from a `Query`.      |
+| **LogicalPlanner**   | Builds a tree of logical nodes from an analyzed statement.                         |
 | **PhysicalPlanner**  | Maps logical nodes to physical executor operators (`SeqScanOp`, `FilterOp`, etc.). |
 | **CompilePredicate** | Converts `AnalyzedExpr` trees into runtime closures that evaluate against tuples.  |
 
+### Logical Plan Nodes
+
+| Node              | Statement | Description                                |
+| ----------------- | --------- | ------------------------------------------ |
+| `LogicalScan`     | All       | Sequential scan of a table                 |
+| `LogicalFilter`   | All       | Applies a WHERE predicate                  |
+| `LogicalProject`  | SELECT    | Projects specific columns                  |
+| `LogicalLimit`    | SELECT    | Limits output row count                    |
+| `LogicalDelete`   | DELETE    | Marks matched tuples for deletion          |
+| `LogicalInsert`   | INSERT    | Holds value rows to insert (no children)   |
+| `LogicalUpdate`   | UPDATE    | Applies SET assignments to matched tuples  |
+
 ### Responsibilities
 
-- **Logical Planning**: Constructs a `LogicalScan` -> `LogicalFilter` -> `LogicalProject` -> `LogicalLimit` pipeline from the analyzed query's range table, WHERE clause, target list, and limit.
+- **Logical Planning**: Constructs the appropriate logical plan tree based on statement type. SELECT builds Scan -> Filter -> Project -> Limit. DML statements (INSERT, UPDATE, DELETE) build their own pipelines.
 - **Physical Planning**: Maps each logical node to its corresponding physical operator, resolving column ordinal positions and building output schemas.
 - **Predicate Compilation**: Walks the `AnalyzedExpr` tree at plan time and produces a `std::function<bool(Tuple)>` closure for runtime evaluation.
 
 ## Project Roadmap
 
-| Phase | Layer           | Status | Description                                                         |
-| ----- | --------------- | ------ | ------------------------------------------------------------------- |
-| 1     | **Storage**     | Done   | DiskManager, BufferManager, Slotted Pages.                          |
-| 2     | **Access**      | Done   | Heap file and heap iteration. (Future: B+-tree, Hash index.)        |
-| 3     | **Catalog**     | Done   | System catalogs for tables, columns, and types.                     |
-| 4     | **Model**       | Done   | Schema-aware table management with binary encoding.                 |
-| 5     | **Executor**    | Done   | Volcano iterator model with scan, filter, project, limit operators. |
-| 6     | **Parser**      | Done   | Lexer, recursive descent parser, and semantic analyzer.             |
-| 7     | **Planner**     | Done   | Logical and physical planners bridging parser to executor.          |
-| 8     | **Concurrency** |        | Locking, transaction management, and isolation.                     |
-| 9     | **Recovery**    |        | Write-ahead logging and crash recovery.                             |
-| 10    | **Networking**  |        | Client-server interface for remote connections.                     |
+| Phase | Layer           | Status | Description                                                                |
+| ----- | --------------- | ------ | -------------------------------------------------------------------------- |
+| 1     | **Storage**     | Done   | DiskManager, BufferManager, Slotted Pages.                                 |
+| 2     | **Access**      | Done   | Heap file and heap iteration. (Future: B+-tree, Hash index.)               |
+| 3     | **Catalog**     | Done   | System catalogs for tables, columns, and types.                            |
+| 4     | **Model**       | Done   | Schema-aware table management with binary encoding.                        |
+| 5     | **Executor**    | Done   | Volcano iterator model with scan, filter, project, limit operators.        |
+| 6     | **Parser**      | Done   | Lexer, recursive descent parser, and semantic analyzer.                    |
+| 7     | **Planner**     | Done   | Logical and physical planners bridging parser to executor.                 |
+| 8     | **DML**         | Done   | INSERT, UPDATE, DELETE support across parser, planner, and executor.       |
+| 9     | **DDL**         |        | CREATE TABLE, DROP TABLE.                                                  |
+| 10    | **Concurrency** |        | Locking, transaction management, and isolation.                            |
+| 11    | **Recovery**    |        | Write-ahead logging and crash recovery.                                    |
+| 12    | **Networking**  |        | Client-server interface for remote connections.                            |
 
 ## License
 

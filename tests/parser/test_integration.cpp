@@ -325,3 +325,42 @@ TEST_F(IntegrationTest, UpdateThenSelectRoundTrip) {
     ASSERT_EQ(rows.size(), 1);
     EXPECT_EQ(std::get<uint32_t>(rows[0].GetValues()[0]), 100);
 }
+
+
+// Full DML lifecycle: INSERT -> SELECT -> UPDATE -> SELECT -> DELETE -> SELECT
+TEST_F(IntegrationTest, DmlFullLifecycle) {
+    // 1. INSERT two new rows
+    auto ins = run(
+        "INSERT INTO users VALUES (6, 'A', 40), (7, 'B', 33)");
+    EXPECT_EQ(std::get<uint32_t>(ins[0].GetValues()[0]), 2);
+
+    // 2. SELECT to verify they exist
+    auto after_insert = run("SELECT * FROM users");
+    EXPECT_EQ(after_insert.size(), 7);
+
+    auto A = run("SELECT name, age FROM users WHERE id = 6");
+    ASSERT_EQ(A.size(), 1);
+    EXPECT_EQ(std::get<std::string>(A[0].GetValues()[0]), "A");
+    EXPECT_EQ(std::get<uint32_t>(A[0].GetValues()[1]), 40);
+
+    // 3. UPDATE Frank's age
+    auto upd = run("UPDATE users SET age = 41 WHERE id = 6");
+    EXPECT_EQ(std::get<uint32_t>(upd[0].GetValues()[0]), 1);
+
+    // 4. SELECT to verify the update
+    auto A2 = run("SELECT age FROM users WHERE id = 6");
+    ASSERT_EQ(A2.size(), 1);
+    EXPECT_EQ(std::get<uint32_t>(A2[0].GetValues()[0]), 41);
+
+    // 5. DELETE B
+    auto del = run("DELETE FROM users WHERE id = 7");
+    EXPECT_EQ(std::get<uint32_t>(del[0].GetValues()[0]), 1);
+
+    // 6. SELECT to verify removal
+    auto B = run("SELECT * FROM users WHERE id = 7");
+    EXPECT_EQ(B.size(), 0);
+
+    // 7. Final count: original 5 + 2 inserted - 1 deleted = 6
+    auto final_rows = run("SELECT * FROM users");
+    EXPECT_EQ(final_rows.size(), 6);
+}
