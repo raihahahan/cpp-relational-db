@@ -15,6 +15,7 @@ private:
     std::unique_ptr<InsertStmt> parse_insert_stmt();
     std::unique_ptr<UpdateStmt> parse_update_stmt();
     std::unique_ptr<DeleteStmt> parse_delete_stmt();
+    std::unique_ptr<CreateTableStmt> parse_create_table_stmt();
 
     // target list
     std::vector<SelectTarget> parse_target_list();

@@ -2,6 +2,7 @@
 
 #include "error/dberror.h"
 #include "executor/executor.h"
+#include "executor/utility.h"
 #include "executor/test_db_helper.h"
 #include "parser/analyzer.h"
 #include "parser/lexer.h"
@@ -41,6 +42,12 @@ protected:
         parser::Analyzer analyzer{*db_->catalog};
         auto stmt = analyzer.Analyze(*ast);
         planner::PlanningContext ctx{db_->table_mgr.get()};
+
+        if (stmt->type == parser::StmtType::CreateTable) {
+            executor::ExecuteCreateTable(*stmt->create_table,
+                                         *db_->table_mgr);
+            return {};
+        }
 
         planner::LogicalPlanPtr logical;
         if (stmt->type == parser::StmtType::Select)
@@ -363,4 +370,26 @@ TEST_F(IntegrationTest, DmlFullLifecycle) {
     // 7. Final count: original 5 + 2 inserted - 1 deleted = 6
     auto final_rows = run("SELECT * FROM users");
     EXPECT_EQ(final_rows.size(), 6);
+}
+
+
+// ========== CREATE TABLE integration ==========
+
+TEST_F(IntegrationTest, CreateTableThenInsertAndSelect) {
+    run("CREATE TABLE products (id INT, label TEXT)");
+
+    run("INSERT INTO products VALUES (1, 'Widget')");
+    run("INSERT INTO products VALUES (2, 'Gadget')");
+
+    auto rows = run("SELECT * FROM products");
+    ASSERT_EQ(rows.size(), 2);
+    EXPECT_EQ(std::get<uint32_t>(rows[0].GetValues()[0]), 1);
+    EXPECT_EQ(std::get<std::string>(rows[0].GetValues()[1]), "Widget");
+    EXPECT_EQ(std::get<uint32_t>(rows[1].GetValues()[0]), 2);
+    EXPECT_EQ(std::get<std::string>(rows[1].GetValues()[1]), "Gadget");
+}
+
+TEST_F(IntegrationTest, CreateTableDuplicateThrows) {
+    run("CREATE TABLE items (x INT)");
+    EXPECT_THROW(run("CREATE TABLE items (y TEXT)"), DbError);
 }

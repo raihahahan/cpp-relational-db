@@ -40,6 +40,7 @@ add_library(main
     src/executor/operators/insert_op.cpp
     src/executor/operators/update_op.cpp
     src/executor/operators/delete_op.cpp
+    src/executor/utility.cpp
     src/executor/predicate.cpp
     src/executor/executor.cpp
     src/planner/logical/logical_planner.cpp

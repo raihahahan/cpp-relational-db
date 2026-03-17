@@ -6,6 +6,7 @@
 #include "catalog/catalog_bootstrap.h"
 #include "error/dberror.h"
 #include "executor/executor.h"
+#include "executor/utility.h"
 #include "model/table_manager.h"
 #include "parser/analyzer.h"
 #include "parser/lexer.h"
@@ -86,7 +87,11 @@ int main() {
             auto stmt = analyzer.Analyze(*ast);
             planner::PlanningContext ctx{&table_mgr};
 
-            if (stmt->type == parser::StmtType::Select) {
+            if (stmt->type == parser::StmtType::CreateTable) {
+                auto result = executor::ExecuteCreateTable(
+                    *stmt->create_table, table_mgr);
+                std::cout << result.message << "\n\n";
+            } else if (stmt->type == parser::StmtType::Select) {
                 auto logical_plan = planner::LogicalPlanner::Build(*stmt->select_query);
                 auto physical_plan = planner::PhysicalPlanner::Build(*logical_plan, ctx);
                 executor::Executor exec{std::move(physical_plan)};

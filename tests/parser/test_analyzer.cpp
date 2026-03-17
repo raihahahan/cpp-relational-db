@@ -479,3 +479,41 @@ TEST_F(AnalyzerTest, UpdateUndefinedTableThrows) {
         EXPECT_EQ(e.code(), ErrorCode::UndefinedTable);
     }
 }
+
+
+// ========== CREATE TABLE ==========
+
+TEST_F(AnalyzerTest, CreateTableBasic) {
+    auto stmt = analyze_stmt("CREATE TABLE products (id INT, name TEXT)");
+    ASSERT_EQ(stmt->type, StmtType::CreateTable);
+    ASSERT_NE(stmt->create_table, nullptr);
+    EXPECT_EQ(stmt->create_table->table_name, "products");
+    ASSERT_EQ(stmt->create_table->columns.size(), 2);
+    EXPECT_EQ(stmt->create_table->columns[0].col_name, "id");
+    EXPECT_EQ(stmt->create_table->columns[0].type_id, INT_TYPE);
+    EXPECT_EQ(stmt->create_table->columns[0].ordinal_position, 1);
+    EXPECT_EQ(stmt->create_table->columns[1].col_name, "name");
+    EXPECT_EQ(stmt->create_table->columns[1].type_id, TEXT_TYPE);
+    EXPECT_EQ(stmt->create_table->columns[1].ordinal_position, 2);
+}
+
+TEST_F(AnalyzerTest, CreateTableDuplicateTableThrows) {
+    EXPECT_THROW(
+        analyze_stmt("CREATE TABLE users (id INT)"), DbError);
+}
+
+TEST_F(AnalyzerTest, CreateTableDuplicateColumnThrows) {
+    EXPECT_THROW(
+        analyze_stmt("CREATE TABLE t (id INT, id TEXT)"), DbError);
+}
+
+TEST_F(AnalyzerTest, CreateTableUnknownTypeThrows) {
+    EXPECT_THROW(
+        analyze_stmt("CREATE TABLE t (id FLOAT)"), DbError);
+}
+
+TEST_F(AnalyzerTest, CreateTableEmptyColumnsThrows) {
+    // The parser catches this, so we get a ParseError
+    EXPECT_THROW(
+        analyze_stmt("CREATE TABLE t ()"), DbError);
+}

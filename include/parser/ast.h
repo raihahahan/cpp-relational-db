@@ -73,4 +73,14 @@ struct DeleteStmt : AstNode {
     std::unique_ptr<Expr> where; // nullable (no WHERE = delete all rows)
 };
 
+struct ColumnDef {
+    std::string name;
+    std::string type_name; // "INT", "TEXT" -- resolved to type_id by analyzer
+};
+
+struct CreateTableStmt : AstNode {
+    std::string table_name;
+    std::vector<ColumnDef> columns;
+};
+
 }

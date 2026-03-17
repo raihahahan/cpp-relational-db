@@ -99,8 +99,10 @@ std::unique_ptr<AstNode> Parser::Parse(const std::string& sql) {
         stmt = parser.parse_update_stmt();
     else if (parser.check_keyword("delete"))
         stmt = parser.parse_delete_stmt();
+    else if (parser.check_keyword("create"))
+        stmt = parser.parse_create_table_stmt();
     else
-        parser.error("expected SELECT, INSERT, UPDATE, or DELETE, got '" +
+        parser.error("expected SELECT, INSERT, UPDATE, DELETE, or CREATE, got '" +
                      std::string(parser.peek().lexeme) + "'");
 
     if (!parser.at_end() && !parser.check(TokenType::Semicolon)) {
@@ -414,6 +416,47 @@ std::unique_ptr<DeleteStmt> Parser::parse_delete_stmt() {
     if (match_keyword("where")) {
         stmt->where = parse_expr();
     }
+
+    return stmt;
+}
+
+// CREATE TABLE statement
+std::unique_ptr<CreateTableStmt> Parser::parse_create_table_stmt() {
+    consume_keyword("create");
+    consume_keyword("table");
+
+    Token table_tok = consume(TokenType::Identifier);
+
+    auto stmt = std::make_unique<CreateTableStmt>();
+    stmt->table_name = std::string(table_tok.lexeme);
+
+    consume(TokenType::LParen);
+
+    if (check(TokenType::RParen)) {
+        error("CREATE TABLE requires at least one column definition");
+    }
+
+    do {
+        ColumnDef col;
+        col.name = std::string(consume(TokenType::Identifier).lexeme);
+
+        Token type_tok = consume(TokenType::Identifier);
+        std::string type_upper;
+        type_upper.reserve(type_tok.lexeme.size());
+        for (char c : type_tok.lexeme)
+            type_upper.push_back(
+                static_cast<char>(std::toupper(static_cast<unsigned char>(c))));
+
+        if (type_upper != "INT" && type_upper != "TEXT") {
+            error_at(type_tok, "unknown column type '" +
+                                   std::string(type_tok.lexeme) + "'");
+        }
+        col.type_name = type_upper;
+
+        stmt->columns.push_back(std::move(col));
+    } while (check(TokenType::Comma) && (advance(), true));
+
+    consume(TokenType::RParen);
 
     return stmt;
 }

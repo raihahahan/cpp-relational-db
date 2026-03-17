@@ -2,6 +2,7 @@
 #include "catalog/catalog_bootstrap.h"
 #include "error/dberror.h"
 #include <algorithm>
+#include <unordered_set>
 
 namespace db::parser {
 
@@ -73,6 +74,11 @@ std::unique_ptr<AnalyzedStmt> Analyzer::Analyze(const AstNode& parse_tree) {
     if (auto* del = dynamic_cast<const DeleteStmt*>(&parse_tree)) {
         result->type = StmtType::Delete;
         result->delete_query = analyze_delete(*del);
+        return result;
+    }
+    if (auto* ct = dynamic_cast<const CreateTableStmt*>(&parse_tree)) {
+        result->type = StmtType::CreateTable;
+        result->create_table = analyze_create_table(*ct);
         return result;
     }
 
@@ -442,6 +448,53 @@ catalog::type_id_t Analyzer::infer_literal_type(const Literal& lit) {
         return 0; // deferred: compatible with any type
     }
     return 0;
+}
+
+std::unique_ptr<AnalyzedCreateTable> Analyzer::analyze_create_table(const CreateTableStmt& stmt) {
+    auto existing = _catalog.LookupTable(stmt.table_name);
+    if (existing.has_value()) {
+        throw DbError(ErrorCode::ParseError,
+                       "table \"" + stmt.table_name + "\" already exists");
+    }
+
+    if (stmt.columns.empty()) {
+        throw DbError(ErrorCode::ParseError,
+                       "CREATE TABLE requires at least one column");
+    }
+
+    auto result = std::make_unique<AnalyzedCreateTable>();
+    result->table_name = stmt.table_name;
+
+    std::unordered_set<std::string> seen_names;
+    uint16_t ordinal = 1;
+
+    for (const auto& col_def : stmt.columns) {
+        std::string lower_name = col_def.name;
+        std::transform(lower_name.begin(), lower_name.end(),
+                       lower_name.begin(), ::tolower);
+
+        if (seen_names.count(lower_name)) {
+            throw DbError(ErrorCode::ParseError,
+                           "duplicate column name \"" + col_def.name + "\"");
+        }
+        seen_names.insert(lower_name);
+
+        catalog::type_id_t type_id = 0;
+        if (col_def.type_name == "INT") {
+            type_id = catalog::INT_TYPE;
+        } else if (col_def.type_name == "TEXT") {
+            type_id = catalog::TEXT_TYPE;
+        } else {
+            throw DbError(ErrorCode::ParseError,
+                           "unknown type \"" + col_def.type_name + "\"");
+        }
+
+        result->columns.push_back(
+            catalog::RawColumnInfo{col_def.name, type_id, ordinal});
+        ++ordinal;
+    }
+
+    return result;
 }
 
 }
