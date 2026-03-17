@@ -39,9 +39,19 @@ protected:
     std::vector<common::Tuple> run(const std::string &sql) {
         auto ast = parser::Parser::Parse(sql);
         parser::Analyzer analyzer{*db_->catalog};
-        auto query = analyzer.Analyze(*ast);
-        auto logical = planner::LogicalPlanner::Build(*query);
+        auto stmt = analyzer.Analyze(*ast);
         planner::PlanningContext ctx{db_->table_mgr.get()};
+
+        planner::LogicalPlanPtr logical;
+        if (stmt->type == parser::StmtType::Select)
+            logical = planner::LogicalPlanner::Build(*stmt->select_query);
+        else if (stmt->type == parser::StmtType::Insert)
+            logical = planner::LogicalPlanner::Build(*stmt->insert_query);
+        else if (stmt->type == parser::StmtType::Update)
+            logical = planner::LogicalPlanner::Build(*stmt->update_query);
+        else if (stmt->type == parser::StmtType::Delete)
+            logical = planner::LogicalPlanner::Build(*stmt->delete_query);
+
         auto physical = planner::PhysicalPlanner::Build(*logical, ctx);
         executor::Executor exec{std::move(physical)};
         return exec.ExecuteAndCollect();
@@ -163,4 +173,194 @@ TEST_F(IntegrationTest, UndefinedTable) {
 // Error handling: undefined column
 TEST_F(IntegrationTest, UndefinedColumn) {
     EXPECT_THROW(run("SELECT missing FROM users"), DbError);
+}
+
+
+// DELETE integration
+TEST_F(IntegrationTest, DeleteWithWhere) {
+    auto result = run("DELETE FROM users WHERE id = 3");
+    ASSERT_EQ(result.size(), 1);
+    EXPECT_EQ(std::get<uint32_t>(result[0].GetValues()[0]), 1);
+
+    auto remaining = run("SELECT * FROM users");
+    EXPECT_EQ(remaining.size(), 4);
+
+    for (const auto& row : remaining) {
+        EXPECT_NE(std::get<uint32_t>(row.GetValues()[0]), uint32_t(3));
+    }
+}
+
+TEST_F(IntegrationTest, DeleteAllRows) {
+    auto result = run("DELETE FROM users");
+    ASSERT_EQ(result.size(), 1);
+    EXPECT_EQ(std::get<uint32_t>(result[0].GetValues()[0]), 5);
+
+    auto remaining = run("SELECT * FROM users");
+    EXPECT_EQ(remaining.size(), 0);
+}
+
+TEST_F(IntegrationTest, DeleteNoMatch) {
+    auto result = run("DELETE FROM users WHERE id = 999");
+    ASSERT_EQ(result.size(), 1);
+    EXPECT_EQ(std::get<uint32_t>(result[0].GetValues()[0]), 0);
+
+    auto remaining = run("SELECT * FROM users");
+    EXPECT_EQ(remaining.size(), 5);
+}
+
+TEST_F(IntegrationTest, DeleteUndefinedTableThrows) {
+    EXPECT_THROW(run("DELETE FROM ghosts"), DbError);
+}
+
+
+// INSERT integration
+TEST_F(IntegrationTest, InsertSingleRow) {
+    auto result = run(
+        "INSERT INTO users (id, name, age) VALUES (6, 'Frank', 40)");
+    ASSERT_EQ(result.size(), 1);
+    EXPECT_EQ(std::get<uint32_t>(result[0].GetValues()[0]), 1);
+
+    auto rows = run("SELECT * FROM users WHERE id = 6");
+    ASSERT_EQ(rows.size(), 1);
+    EXPECT_EQ(std::get<uint32_t>(rows[0].GetValues()[0]), 6);
+    EXPECT_EQ(std::get<std::string>(rows[0].GetValues()[1]), "Frank");
+    EXPECT_EQ(std::get<uint32_t>(rows[0].GetValues()[2]), 40);
+}
+
+TEST_F(IntegrationTest, InsertMultiRow) {
+    auto result = run(
+        "INSERT INTO users VALUES (6, 'Frank', 40), (7, 'Grace', 33)");
+    ASSERT_EQ(result.size(), 1);
+    EXPECT_EQ(std::get<uint32_t>(result[0].GetValues()[0]), 2);
+
+    auto rows = run("SELECT * FROM users");
+    EXPECT_EQ(rows.size(), 7);
+}
+
+TEST_F(IntegrationTest, InsertWithoutColumnList) {
+    auto result = run("INSERT INTO users VALUES (10, 'Zoe', 50)");
+    ASSERT_EQ(result.size(), 1);
+    EXPECT_EQ(std::get<uint32_t>(result[0].GetValues()[0]), 1);
+
+    auto rows = run("SELECT name FROM users WHERE id = 10");
+    ASSERT_EQ(rows.size(), 1);
+    EXPECT_EQ(std::get<std::string>(rows[0].GetValues()[0]), "Zoe");
+}
+
+TEST_F(IntegrationTest, InsertTypeMismatchThrows) {
+    EXPECT_THROW(
+        run("INSERT INTO users (id, name, age) VALUES ('bad', 'X', 1)"),
+        DbError);
+}
+
+TEST_F(IntegrationTest, InsertUndefinedTableThrows) {
+    EXPECT_THROW(
+        run("INSERT INTO ghosts VALUES (1)"), DbError);
+}
+
+TEST_F(IntegrationTest, InsertThenDeleteRoundTrip) {
+    run("INSERT INTO users (id, name, age) VALUES (99, 'Temp', 18)");
+    auto before = run("SELECT * FROM users WHERE id = 99");
+    ASSERT_EQ(before.size(), 1);
+
+    run("DELETE FROM users WHERE id = 99");
+    auto after = run("SELECT * FROM users WHERE id = 99");
+    EXPECT_EQ(after.size(), 0);
+}
+
+
+// UPDATE integration
+TEST_F(IntegrationTest, UpdateWithWhere) {
+    auto result = run("UPDATE users SET name = 'ALICE' WHERE id = 1");
+    ASSERT_EQ(result.size(), 1);
+    EXPECT_EQ(std::get<uint32_t>(result[0].GetValues()[0]), 1);
+
+    auto rows = run("SELECT name FROM users WHERE id = 1");
+    ASSERT_EQ(rows.size(), 1);
+    EXPECT_EQ(std::get<std::string>(rows[0].GetValues()[0]), "ALICE");
+}
+
+TEST_F(IntegrationTest, UpdateAllRows) {
+    auto result = run("UPDATE users SET age = 99");
+    ASSERT_EQ(result.size(), 1);
+    EXPECT_EQ(std::get<uint32_t>(result[0].GetValues()[0]), 5);
+
+    auto rows = run("SELECT age FROM users");
+    for (const auto& row : rows) {
+        EXPECT_EQ(std::get<uint32_t>(row.GetValues()[0]), 99);
+    }
+}
+
+TEST_F(IntegrationTest, UpdateNoMatch) {
+    auto result = run("UPDATE users SET age = 1 WHERE id = 999");
+    ASSERT_EQ(result.size(), 1);
+    EXPECT_EQ(std::get<uint32_t>(result[0].GetValues()[0]), 0);
+}
+
+TEST_F(IntegrationTest, UpdateMultiColumn) {
+    auto result = run(
+        "UPDATE users SET name = 'Updated', age = 50 WHERE id = 2");
+    ASSERT_EQ(result.size(), 1);
+    EXPECT_EQ(std::get<uint32_t>(result[0].GetValues()[0]), 1);
+
+    auto rows = run("SELECT name, age FROM users WHERE id = 2");
+    ASSERT_EQ(rows.size(), 1);
+    EXPECT_EQ(std::get<std::string>(rows[0].GetValues()[0]), "Updated");
+    EXPECT_EQ(std::get<uint32_t>(rows[0].GetValues()[1]), 50);
+}
+
+TEST_F(IntegrationTest, UpdateTypeMismatchThrows) {
+    EXPECT_THROW(
+        run("UPDATE users SET id = 'bad' WHERE id = 1"), DbError);
+}
+
+TEST_F(IntegrationTest, UpdateUndefinedTableThrows) {
+    EXPECT_THROW(
+        run("UPDATE ghosts SET x = 1"), DbError);
+}
+
+TEST_F(IntegrationTest, UpdateThenSelectRoundTrip) {
+    run("UPDATE users SET age = 100 WHERE name = 'Eve'");
+    auto rows = run("SELECT age FROM users WHERE name = 'Eve'");
+    ASSERT_EQ(rows.size(), 1);
+    EXPECT_EQ(std::get<uint32_t>(rows[0].GetValues()[0]), 100);
+}
+
+
+// Full DML lifecycle: INSERT -> SELECT -> UPDATE -> SELECT -> DELETE -> SELECT
+TEST_F(IntegrationTest, DmlFullLifecycle) {
+    // 1. INSERT two new rows
+    auto ins = run(
+        "INSERT INTO users VALUES (6, 'A', 40), (7, 'B', 33)");
+    EXPECT_EQ(std::get<uint32_t>(ins[0].GetValues()[0]), 2);
+
+    // 2. SELECT to verify they exist
+    auto after_insert = run("SELECT * FROM users");
+    EXPECT_EQ(after_insert.size(), 7);
+
+    auto A = run("SELECT name, age FROM users WHERE id = 6");
+    ASSERT_EQ(A.size(), 1);
+    EXPECT_EQ(std::get<std::string>(A[0].GetValues()[0]), "A");
+    EXPECT_EQ(std::get<uint32_t>(A[0].GetValues()[1]), 40);
+
+    // 3. UPDATE Frank's age
+    auto upd = run("UPDATE users SET age = 41 WHERE id = 6");
+    EXPECT_EQ(std::get<uint32_t>(upd[0].GetValues()[0]), 1);
+
+    // 4. SELECT to verify the update
+    auto A2 = run("SELECT age FROM users WHERE id = 6");
+    ASSERT_EQ(A2.size(), 1);
+    EXPECT_EQ(std::get<uint32_t>(A2[0].GetValues()[0]), 41);
+
+    // 5. DELETE B
+    auto del = run("DELETE FROM users WHERE id = 7");
+    EXPECT_EQ(std::get<uint32_t>(del[0].GetValues()[0]), 1);
+
+    // 6. SELECT to verify removal
+    auto B = run("SELECT * FROM users WHERE id = 7");
+    EXPECT_EQ(B.size(), 0);
+
+    // 7. Final count: original 5 + 2 inserted - 1 deleted = 6
+    auto final_rows = run("SELECT * FROM users");
+    EXPECT_EQ(final_rows.size(), 6);
 }

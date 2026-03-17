@@ -51,4 +51,26 @@ struct SelectStmt : AstNode {
     std::optional<size_t> limit; // nullopt = no limit
 };
 
+struct InsertStmt : AstNode {
+    std::string table_name;
+    std::vector<std::string> columns;                       // optional column list; empty = all columns in order
+    std::vector<std::vector<std::unique_ptr<Expr>>> values; // one vector<Expr> per row
+};
+
+struct SetClause {
+    std::string column_name;
+    std::unique_ptr<Expr> value;
+};
+
+struct UpdateStmt : AstNode {
+    std::string table_name;
+    std::vector<SetClause> set_clauses;
+    std::unique_ptr<Expr> where; // nullable (no WHERE = update all rows)
+};
+
+struct DeleteStmt : AstNode {
+    std::string table_name;
+    std::unique_ptr<Expr> where; // nullable (no WHERE = delete all rows)
+};
+
 }

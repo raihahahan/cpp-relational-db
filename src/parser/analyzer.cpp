@@ -51,11 +51,31 @@ std::unique_ptr<AnalyzedExpr> clone(const AnalyzedExpr& expr) {
 
 Analyzer::Analyzer(catalog::Catalog& catalog) : _catalog(catalog) {}
 
-// ENTRYPOINTS
-std::unique_ptr<Query> Analyzer::Analyze(const AstNode& parse_tree) {
+// ENTRYPOINT
+std::unique_ptr<AnalyzedStmt> Analyzer::Analyze(const AstNode& parse_tree) {
+    auto result = std::make_unique<AnalyzedStmt>();
+
     if (auto* select = dynamic_cast<const SelectStmt*>(&parse_tree)) {
-        return analyze_select(*select);
+        result->type = StmtType::Select;
+        result->select_query = analyze_select(*select);
+        return result;
     }
+    if (auto* ins = dynamic_cast<const InsertStmt*>(&parse_tree)) {
+        result->type = StmtType::Insert;
+        result->insert_query = analyze_insert(*ins);
+        return result;
+    }
+    if (auto* upd = dynamic_cast<const UpdateStmt*>(&parse_tree)) {
+        result->type = StmtType::Update;
+        result->update_query = analyze_update(*upd);
+        return result;
+    }
+    if (auto* del = dynamic_cast<const DeleteStmt*>(&parse_tree)) {
+        result->type = StmtType::Delete;
+        result->delete_query = analyze_delete(*del);
+        return result;
+    }
+
     throw DbError(ErrorCode::ParseError, "unsupported statement type");
 }
 
@@ -86,6 +106,120 @@ std::unique_ptr<Query> Analyzer::analyze_select(const SelectStmt& stmt) {
     query->limit_count = stmt.limit;
 
     return query;
+}
+
+std::unique_ptr<AnalyzedInsert> Analyzer::analyze_insert(const InsertStmt& stmt) {
+    auto result = std::make_unique<AnalyzedInsert>();
+
+    result->table = resolve_table(stmt.table_name);
+    auto all_columns = _catalog.GetTableColumns(result->table.table_id);
+    std::sort(all_columns.begin(), all_columns.end(),
+              [](const catalog::ColumnInfo& a, const catalog::ColumnInfo& b) {
+                  return a.ordinal_position < b.ordinal_position;
+              });
+
+    // determine target columns
+    if (stmt.columns.empty()) {
+        result->target_columns = all_columns;
+    } else {
+        for (const auto& col_name : stmt.columns) {
+            result->target_columns.push_back(resolve_column(col_name, all_columns));
+        }
+        if (result->target_columns.size() != all_columns.size()) {
+            throw DbError(ErrorCode::ParseError,
+                "INSERT must provide values for all " +
+                std::to_string(all_columns.size()) +
+                " columns (no DEFAULT or NULL support yet)");
+        }
+    }
+
+    if (stmt.values.empty()) {
+        throw DbError(ErrorCode::ParseError, "INSERT requires at least one row of values");
+    }
+
+    // analyze each row
+    for (size_t row_idx = 0; row_idx < stmt.values.size(); ++row_idx) {
+        const auto& raw_row = stmt.values[row_idx];
+
+        if (raw_row.size() != result->target_columns.size()) {
+            throw DbError(ErrorCode::ParseError,
+                "INSERT has " + std::to_string(raw_row.size()) +
+                " values but " + std::to_string(result->target_columns.size()) +
+                " target columns");
+        }
+
+        std::vector<std::unique_ptr<AnalyzedExpr>> analyzed_row;
+        for (size_t i = 0; i < raw_row.size(); ++i) {
+            auto analyzed_val = analyze_expr(*raw_row[i], all_columns);
+            auto val_type = analyzed_val->result_type;
+            auto col_type = result->target_columns[i].type_id;
+
+            // NULL is compatible with any type
+            if (val_type != 0 && col_type != 0 && val_type != col_type) {
+                throw DbError(ErrorCode::TypeMismatch,
+                    "column \"" + result->target_columns[i].col_name +
+                    "\" is " + type_name(col_type) + " but expression is " +
+                    type_name(val_type));
+            }
+            analyzed_row.push_back(std::move(analyzed_val));
+        }
+        result->values.push_back(std::move(analyzed_row));
+    }
+
+    return result;
+}
+
+std::unique_ptr<AnalyzedUpdate> Analyzer::analyze_update(const UpdateStmt& stmt) {
+    auto result = std::make_unique<AnalyzedUpdate>();
+
+    result->table = resolve_table(stmt.table_name);
+    result->table_columns = _catalog.GetTableColumns(result->table.table_id);
+    std::sort(result->table_columns.begin(), result->table_columns.end(),
+              [](const catalog::ColumnInfo& a, const catalog::ColumnInfo& b) {
+                  return a.ordinal_position < b.ordinal_position;
+              });
+
+    if (stmt.set_clauses.empty()) {
+        throw DbError(ErrorCode::ParseError, "UPDATE requires at least one SET clause");
+    }
+
+    for (const auto& clause : stmt.set_clauses) {
+        auto col = resolve_column(clause.column_name, result->table_columns);
+        auto analyzed_val = analyze_expr(*clause.value, result->table_columns);
+        auto val_type = analyzed_val->result_type;
+
+        if (val_type != 0 && col.type_id != 0 && val_type != col.type_id) {
+            throw DbError(ErrorCode::TypeMismatch,
+                "column \"" + col.col_name + "\" is " + type_name(col.type_id) +
+                " but expression is " + type_name(val_type));
+        }
+
+        result->assignments.emplace_back(col, std::move(analyzed_val));
+    }
+
+    if (stmt.where) {
+        result->where_clause = analyze_expr(*stmt.where, result->table_columns);
+    }
+
+    return result;
+}
+
+std::unique_ptr<AnalyzedDelete> Analyzer::analyze_delete(const DeleteStmt& stmt) {
+    auto result = std::make_unique<AnalyzedDelete>();
+
+    result->table = resolve_table(stmt.table_name);
+    result->table_columns = _catalog.GetTableColumns(result->table.table_id);
+
+    std::sort(result->table_columns.begin(), result->table_columns.end(),
+              [](const catalog::ColumnInfo& a, const catalog::ColumnInfo& b) {
+                  return a.ordinal_position < b.ordinal_position;
+              });
+
+    if (stmt.where) {
+        result->where_clause = analyze_expr(*stmt.where, result->table_columns);
+    }
+
+    return result;
 }
 
 

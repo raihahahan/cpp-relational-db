@@ -18,6 +18,8 @@ class UserTable : public Relation {
 public:
     explicit UserTable(HeapFile hf, std::vector<ColumnInfo> schema, table_id_t table_id);
     std::optional<RID> Insert(const std::vector<common::Value> values);
+    bool Update(const access::RID& rid, const std::vector<common::Value>& values);
+    bool Delete(const access::RID& rid);
     Tuple Decode(const Record& rec) const override;
 private:
     std::vector<ColumnInfo> _schema;

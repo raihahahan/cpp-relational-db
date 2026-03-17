@@ -10,7 +10,9 @@ void SeqScanOp::Open() {
 
 std::optional<Tuple> SeqScanOp::Next() {
     if (!_iter.HasNext()) return std::nullopt;
-    return _rel.Decode(_iter.Next());
+    auto record = _iter.Next();
+    auto tuple = _rel.Decode(record);
+    return Tuple{tuple.GetValues(), tuple.GetSchema(), record.rid};
 }
 
 void SeqScanOp::Close() {}

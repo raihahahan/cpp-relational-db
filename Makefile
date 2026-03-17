@@ -55,7 +55,7 @@ test_db_server:
 
 # MODEL
 test_model:
-	@cd $(BUILD_DIR) && ./test_table_manager && ./test_user_table && ./test_dynamic_codec
+	@cd $(BUILD_DIR) && ./test_table_manager && ./test_user_table && ./test_dynamic_codec && ./test_user_table_mutations
 
 # EXECUTOR
 test_operators:

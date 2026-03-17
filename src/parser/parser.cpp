@@ -90,7 +90,18 @@ std::unique_ptr<AstNode> Parser::Parse(const std::string& sql) {
     Lexer lexer{sql};
     Parser parser{std::move(lexer)};
 
-    auto stmt = parser.parse_select_stmt();
+    std::unique_ptr<AstNode> stmt;
+    if (parser.check_keyword("select"))
+        stmt = parser.parse_select_stmt();
+    else if (parser.check_keyword("insert"))
+        stmt = parser.parse_insert_stmt();
+    else if (parser.check_keyword("update"))
+        stmt = parser.parse_update_stmt();
+    else if (parser.check_keyword("delete"))
+        stmt = parser.parse_delete_stmt();
+    else
+        parser.error("expected SELECT, INSERT, UPDATE, or DELETE, got '" +
+                     std::string(parser.peek().lexeme) + "'");
 
     if (!parser.at_end() && !parser.check(TokenType::Semicolon)) {
         parser.error("unexpected token after statement: '" +
@@ -318,5 +329,92 @@ std::unique_ptr<Expr> Parser::parse_primary_expr() {
     }
 
     error("expected expression, got '" + std::string(_current.lexeme) + "'");
+}
+
+// INSERT statement
+std::unique_ptr<InsertStmt> Parser::parse_insert_stmt() {
+    consume_keyword("insert");
+    consume_keyword("into");
+
+    Token table_tok = consume(TokenType::Identifier);
+
+    auto stmt = std::make_unique<InsertStmt>();
+    stmt->table_name = std::string(table_tok.lexeme);
+
+    // optional column list
+    if (check(TokenType::LParen)) {
+        advance();
+        stmt->columns.push_back(std::string(consume(TokenType::Identifier).lexeme));
+        while (check(TokenType::Comma)) {
+            advance();
+            stmt->columns.push_back(std::string(consume(TokenType::Identifier).lexeme));
+        }
+        consume(TokenType::RParen);
+    }
+
+    consume_keyword("values");
+
+    // one or more value rows
+    do {
+        consume(TokenType::LParen);
+        stmt->values.push_back(parse_expr_list());
+        consume(TokenType::RParen);
+    } while (check(TokenType::Comma) && (advance(), true));
+
+    return stmt;
+}
+
+std::vector<std::unique_ptr<Expr>> Parser::parse_expr_list() {
+    std::vector<std::unique_ptr<Expr>> exprs;
+    exprs.push_back(parse_expr());
+    while (check(TokenType::Comma)) {
+        advance();
+        exprs.push_back(parse_expr());
+    }
+    return exprs;
+}
+
+// UPDATE statement
+std::unique_ptr<UpdateStmt> Parser::parse_update_stmt() {
+    consume_keyword("update");
+
+    Token table_tok = consume(TokenType::Identifier);
+
+    auto stmt = std::make_unique<UpdateStmt>();
+    stmt->table_name = std::string(table_tok.lexeme);
+
+    consume_keyword("set");
+
+    // parse SET clauses: col = expr [, col = expr]*
+    do {
+        SetClause clause;
+        clause.column_name = std::string(consume(TokenType::Identifier).lexeme);
+        consume(TokenType::Operator); // '='
+        clause.value = parse_expr();
+        stmt->set_clauses.push_back(std::move(clause));
+    } while (check(TokenType::Comma) && (advance(), true));
+
+    if (match_keyword("where")) {
+        stmt->where = parse_expr();
+    }
+
+    return stmt;
+}
+
+// DELETE statement
+std::unique_ptr<DeleteStmt> Parser::parse_delete_stmt() {
+    consume_keyword("delete");
+    consume_keyword("from");
+
+    Token table_tok = consume(TokenType::Identifier);
+
+    auto stmt = std::make_unique<DeleteStmt>();
+    stmt->table_name = std::string(table_tok.lexeme);
+
+    if (match_keyword("where")) {
+        stmt->where = parse_expr();
+    }
+
+    return stmt;
 }
 }

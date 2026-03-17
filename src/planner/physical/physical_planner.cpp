@@ -5,11 +5,17 @@
 #include "planner/logical/nodes/filter.h"
 #include "planner/logical/nodes/project.h"
 #include "planner/logical/nodes/limit.h"
+#include "planner/logical/nodes/insert_node.h"
+#include "planner/logical/nodes/update_node.h"
+#include "planner/logical/nodes/delete_node.h"
 
 #include "executor/operators/seq_scan_op.h"
 #include "executor/operators/filter_op.h"
 #include "executor/operators/limit_op.h"
 #include "executor/operators/projection_op.h"
+#include "executor/operators/insert_op.h"
+#include "executor/operators/update_op.h"
+#include "executor/operators/delete_op.h"
 #include "executor/predicate.h"
 #include "parser/analyzer.h"
 #include "catalog/catalog_bootstrap.h"
@@ -33,7 +39,8 @@ compile(const parser::AnalyzedExpr &expr) {
         uint16_t pos = col->column.ordinal_position;
         catalog::type_id_t type = col->column.type_id;
         return [pos, type](const Tuple &t) -> bool {
-            auto& v = t.GetValues()[pos - 1];
+            auto vals = t.GetValues();
+            auto& v = vals[pos - 1];
             if (type == catalog::INT_TYPE)
                 return std::get<uint32_t>(v) != 0;
             return !std::get<std::string>(v).empty();
@@ -244,6 +251,38 @@ ColumnsToPositions(const logical::LogicalProject &proj) {
     return {positions.begin(), positions.end()};
 }
 
+common::Value EvaluateExprToValue(const parser::AnalyzedExpr& expr) {
+    if (auto* lit = dynamic_cast<const parser::AnalyzedLiteral*>(&expr)) {
+        if (lit->result_type == catalog::INT_TYPE)
+            return common::Value{static_cast<uint32_t>(std::stoul(lit->value))};
+        if (lit->result_type == catalog::TEXT_TYPE)
+            return common::Value{lit->value};
+    }
+    throw std::runtime_error("EvaluateExprToValue: unsupported expression");
+}
+
+std::vector<std::vector<common::Value>>
+EvaluateInsertValues(const logical::LogicalInsert& ins) {
+    std::vector<std::vector<common::Value>> rows;
+    for (const auto& analyzed_row : ins.Values()) {
+        std::vector<common::Value> row;
+        for (const auto& val_expr : analyzed_row) {
+            row.push_back(EvaluateExprToValue(*val_expr));
+        }
+        rows.push_back(std::move(row));
+    }
+    return rows;
+}
+
+std::vector<std::pair<uint16_t, common::Value>>
+EvaluateAssignments(const logical::LogicalUpdate& upd) {
+    std::vector<std::pair<uint16_t, common::Value>> result;
+    for (const auto& [col, expr] : upd.Assignments()) {
+        result.emplace_back(col.ordinal_position, EvaluateExprToValue(*expr));
+    }
+    return result;
+}
+
 // PhysicalPlanner::Build
 std::unique_ptr<executor::Operator>
 PhysicalPlanner::Build(const LogicalPlan &plan, PlanningContext &ctx) {
@@ -277,6 +316,29 @@ PhysicalPlanner::Build(const LogicalPlan &plan, PlanningContext &ctx) {
         return std::make_unique<executor::LimitOp>(
             std::move(child_op), limit.Limit()
         );
+    }
+
+    case LogicalPlanType::Insert: {
+        auto& ins = static_cast<const logical::LogicalInsert&>(plan);
+        auto table = ctx.table_mgr->OpenTable(ins.TableName());
+        auto rows = EvaluateInsertValues(ins);
+        return std::make_unique<executor::InsertOp>(table, std::move(rows));
+    }
+
+    case LogicalPlanType::Update: {
+        auto& upd = static_cast<const logical::LogicalUpdate&>(plan);
+        auto table = ctx.table_mgr->OpenTable(upd.TableName());
+        auto child_op = Build(upd.Child(), ctx);
+        auto assignments = EvaluateAssignments(upd);
+        return std::make_unique<executor::UpdateOp>(
+            std::move(child_op), table, std::move(assignments));
+    }
+
+    case LogicalPlanType::Delete: {
+        auto& del = static_cast<const logical::LogicalDelete&>(plan);
+        auto table = ctx.table_mgr->OpenTable(del.TableName());
+        auto child_op = Build(del.Child(), ctx);
+        return std::make_unique<executor::DeleteOp>(std::move(child_op), table);
     }
 
     default:

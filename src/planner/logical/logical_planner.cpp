@@ -3,6 +3,9 @@
 #include "planner/logical/nodes/filter.h"
 #include "planner/logical/nodes/project.h"
 #include "planner/logical/nodes/limit.h"
+#include "planner/logical/nodes/insert_node.h"
+#include "planner/logical/nodes/update_node.h"
+#include "planner/logical/nodes/delete_node.h"
 
 namespace db::planner {
 
@@ -74,6 +77,67 @@ const std::vector<LogicalPlan *> &LogicalLimit::Children() const {
 
 size_t LogicalLimit::Limit() const { return _limit; }
 
+// LogicalInsert
+LogicalInsert::LogicalInsert(std::string table_name,
+                             std::vector<catalog::ColumnInfo> target_columns,
+                             std::vector<std::vector<std::unique_ptr<parser::AnalyzedExpr>>> values)
+    : _table_name(std::move(table_name)),
+      _target_columns(std::move(target_columns)),
+      _values(std::move(values)) {}
+
+LogicalPlanType LogicalInsert::Type() const { return LogicalPlanType::Insert; }
+
+const std::vector<LogicalPlan*>& LogicalInsert::Children() const {
+    static const std::vector<LogicalPlan*> empty;
+    return empty;
+}
+
+const std::string& LogicalInsert::TableName() const { return _table_name; }
+
+const std::vector<catalog::ColumnInfo>& LogicalInsert::TargetColumns() const {
+    return _target_columns;
+}
+
+const std::vector<std::vector<std::unique_ptr<parser::AnalyzedExpr>>>&
+LogicalInsert::Values() const { return _values; }
+
+// LogicalUpdate
+LogicalUpdate::LogicalUpdate(LogicalPlanPtr child,
+                             std::string table_name,
+                             std::vector<std::pair<catalog::ColumnInfo, std::unique_ptr<parser::AnalyzedExpr>>> assignments)
+    : _child(std::move(child)),
+      _table_name(std::move(table_name)),
+      _assignments(std::move(assignments)) {}
+
+LogicalPlanType LogicalUpdate::Type() const { return LogicalPlanType::Update; }
+
+const std::vector<LogicalPlan*>& LogicalUpdate::Children() const {
+    _children_cache = {_child.get()};
+    return _children_cache;
+}
+
+const std::string& LogicalUpdate::TableName() const { return _table_name; }
+
+LogicalPlan& LogicalUpdate::Child() const { return *_child; }
+
+const std::vector<std::pair<catalog::ColumnInfo, std::unique_ptr<parser::AnalyzedExpr>>>&
+LogicalUpdate::Assignments() const { return _assignments; }
+
+// LogicalDelete
+LogicalDelete::LogicalDelete(LogicalPlanPtr child, std::string table_name)
+    : _child(std::move(child)), _table_name(std::move(table_name)) {}
+
+LogicalPlanType LogicalDelete::Type() const { return LogicalPlanType::Delete; }
+
+const std::vector<LogicalPlan*>& LogicalDelete::Children() const {
+    _children_cache = {_child.get()};
+    return _children_cache;
+}
+
+const std::string& LogicalDelete::TableName() const { return _table_name; }
+
+LogicalPlan& LogicalDelete::Child() const { return *_child; }
+
 }
 
 LogicalPlanPtr LogicalPlanner::Build(const parser::Query &query) {
@@ -107,5 +171,54 @@ LogicalPlanPtr LogicalPlanner::Build(const parser::Query &query) {
     }
 
     return plan;
+}
+
+LogicalPlanPtr LogicalPlanner::Build(const parser::AnalyzedInsert& ins) {
+    // Clone the analyzed values since we need to move them into the node
+    std::vector<std::vector<std::unique_ptr<parser::AnalyzedExpr>>> cloned_values;
+    for (const auto& row : ins.values) {
+        std::vector<std::unique_ptr<parser::AnalyzedExpr>> cloned_row;
+        for (const auto& val : row) {
+            cloned_row.push_back(parser::clone(*val));
+        }
+        cloned_values.push_back(std::move(cloned_row));
+    }
+
+    return std::make_unique<logical::LogicalInsert>(
+        ins.table.table_name,
+        ins.target_columns,
+        std::move(cloned_values));
+}
+
+LogicalPlanPtr LogicalPlanner::Build(const parser::AnalyzedUpdate& upd) {
+    LogicalPlanPtr plan = std::make_unique<logical::LogicalScan>(upd.table.table_name);
+
+    if (upd.where_clause) {
+        auto pred_copy = parser::clone(*upd.where_clause);
+        plan = std::make_unique<logical::LogicalFilter>(std::move(plan),
+                                                        std::move(pred_copy));
+    }
+
+    // Clone the assignments for the logical node
+    std::vector<std::pair<catalog::ColumnInfo, std::unique_ptr<parser::AnalyzedExpr>>> cloned;
+    for (const auto& [col, expr] : upd.assignments) {
+        cloned.emplace_back(col, parser::clone(*expr));
+    }
+
+    return std::make_unique<logical::LogicalUpdate>(
+        std::move(plan), upd.table.table_name, std::move(cloned));
+}
+
+LogicalPlanPtr LogicalPlanner::Build(const parser::AnalyzedDelete& del) {
+    LogicalPlanPtr plan = std::make_unique<logical::LogicalScan>(del.table.table_name);
+
+    if (del.where_clause) {
+        auto pred_copy = parser::clone(*del.where_clause);
+        plan = std::make_unique<logical::LogicalFilter>(std::move(plan),
+                                                        std::move(pred_copy));
+    }
+
+    return std::make_unique<logical::LogicalDelete>(std::move(plan),
+                                                    del.table.table_name);
 }
 }
