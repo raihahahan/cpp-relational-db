@@ -284,6 +284,8 @@ The **planner layer** converts an `AnalyzedStmt` into an executable operator tre
 - **Physical Planning**: Maps each logical node to its corresponding physical operator, resolving column ordinal positions and building output schemas.
 - **Predicate Compilation**: Walks the `AnalyzedExpr` tree at plan time and produces a `std::function<bool(Tuple)>` closure for runtime evaluation.
 
+For detailed documentation, see the [planner/README.md](src/planner/README.md).
+
 ## Project Roadmap
 
 | Phase | Layer           | Status | Description                                                                |
