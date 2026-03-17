@@ -303,3 +303,102 @@ TEST_F(AnalyzerTest, DeleteUndefinedColumnInWhereThrows) {
         EXPECT_EQ(e.code(), ErrorCode::UndefinedColumn);
     }
 }
+
+
+// INSERT analysis
+TEST_F(AnalyzerTest, InsertResolvesTable) {
+    auto stmt = analyze_stmt(
+        "INSERT INTO users (id, name, age) VALUES (1, 'Alice', 30)");
+
+    ASSERT_EQ(stmt->type, StmtType::Insert);
+    ASSERT_NE(stmt->insert_query, nullptr);
+    EXPECT_EQ(stmt->insert_query->table.table_name, "users");
+}
+
+TEST_F(AnalyzerTest, InsertResolvesColumns) {
+    auto stmt = analyze_stmt(
+        "INSERT INTO users (id, name, age) VALUES (1, 'Alice', 30)");
+
+    ASSERT_EQ(stmt->insert_query->target_columns.size(), 3);
+    EXPECT_EQ(stmt->insert_query->target_columns[0].col_name, "id");
+    EXPECT_EQ(stmt->insert_query->target_columns[1].col_name, "name");
+    EXPECT_EQ(stmt->insert_query->target_columns[2].col_name, "age");
+}
+
+TEST_F(AnalyzerTest, InsertWithoutColumnsUsesAll) {
+    auto stmt = analyze_stmt(
+        "INSERT INTO users VALUES (1, 'Alice', 30)");
+
+    ASSERT_EQ(stmt->insert_query->target_columns.size(), 3);
+    EXPECT_EQ(stmt->insert_query->target_columns[0].col_name, "id");
+    EXPECT_EQ(stmt->insert_query->target_columns[1].col_name, "name");
+    EXPECT_EQ(stmt->insert_query->target_columns[2].col_name, "age");
+}
+
+TEST_F(AnalyzerTest, InsertMultiRow) {
+    auto stmt = analyze_stmt(
+        "INSERT INTO users VALUES (1, 'A', 20), (2, 'B', 30)");
+
+    ASSERT_EQ(stmt->insert_query->values.size(), 2);
+    ASSERT_EQ(stmt->insert_query->values[0].size(), 3);
+    ASSERT_EQ(stmt->insert_query->values[1].size(), 3);
+}
+
+TEST_F(AnalyzerTest, InsertTypeMismatchThrows) {
+    EXPECT_THROW(
+        analyze_stmt("INSERT INTO users (id, name, age) VALUES ('bad', 'X', 1)"),
+        DbError);
+
+    try {
+        analyze_stmt("INSERT INTO users (id, name, age) VALUES ('bad', 'X', 1)");
+    } catch (const DbError& e) {
+        EXPECT_EQ(e.code(), ErrorCode::TypeMismatch);
+    }
+}
+
+TEST_F(AnalyzerTest, InsertWrongColumnCountThrows) {
+    EXPECT_THROW(
+        analyze_stmt("INSERT INTO users (id, name) VALUES (1, 'A', 99)"),
+        DbError);
+
+    try {
+        analyze_stmt("INSERT INTO users (id, name) VALUES (1, 'A', 99)");
+    } catch (const DbError& e) {
+        EXPECT_EQ(e.code(), ErrorCode::ParseError);
+    }
+}
+
+TEST_F(AnalyzerTest, InsertPartialColumnsThrows) {
+    EXPECT_THROW(
+        analyze_stmt("INSERT INTO users (name, age) VALUES ('Alice', 30)"),
+        DbError);
+
+    try {
+        analyze_stmt("INSERT INTO users (name, age) VALUES ('Alice', 30)");
+    } catch (const DbError& e) {
+        EXPECT_EQ(e.code(), ErrorCode::ParseError);
+    }
+}
+
+TEST_F(AnalyzerTest, InsertUndefinedColumnThrows) {
+    EXPECT_THROW(
+        analyze_stmt("INSERT INTO users (id, bad_col) VALUES (1, 'X')"),
+        DbError);
+
+    try {
+        analyze_stmt("INSERT INTO users (id, bad_col) VALUES (1, 'X')");
+    } catch (const DbError& e) {
+        EXPECT_EQ(e.code(), ErrorCode::UndefinedColumn);
+    }
+}
+
+TEST_F(AnalyzerTest, InsertUndefinedTableThrows) {
+    EXPECT_THROW(
+        analyze_stmt("INSERT INTO ghosts VALUES (1)"), DbError);
+
+    try {
+        analyze_stmt("INSERT INTO ghosts VALUES (1)");
+    } catch (const DbError& e) {
+        EXPECT_EQ(e.code(), ErrorCode::UndefinedTable);
+    }
+}

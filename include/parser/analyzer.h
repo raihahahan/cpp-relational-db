@@ -54,6 +54,13 @@ struct Query {
     std::optional<size_t> limit_count;
 };
 
+// Analyzed INSERT output
+struct AnalyzedInsert {
+    catalog::TableInfo table;
+    std::vector<catalog::ColumnInfo> target_columns;
+    std::vector<std::vector<std::unique_ptr<AnalyzedExpr>>> values;
+};
+
 // Analyzed DELETE output
 struct AnalyzedDelete {
     catalog::TableInfo table;
@@ -68,6 +75,7 @@ enum class StmtType { Select, Insert, Update, Delete };
 struct AnalyzedStmt {
     StmtType type;
     std::unique_ptr<Query> select_query;
+    std::unique_ptr<AnalyzedInsert> insert_query;
     std::unique_ptr<AnalyzedDelete> delete_query;
 };
 
@@ -83,6 +91,7 @@ public:
 
 private:
     std::unique_ptr<Query> analyze_select(const SelectStmt& stmt);
+    std::unique_ptr<AnalyzedInsert> analyze_insert(const InsertStmt& stmt);
     std::unique_ptr<AnalyzedDelete> analyze_delete(const DeleteStmt& stmt);
 
     // Name resolution

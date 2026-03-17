@@ -5,12 +5,14 @@
 #include "planner/logical/nodes/filter.h"
 #include "planner/logical/nodes/project.h"
 #include "planner/logical/nodes/limit.h"
+#include "planner/logical/nodes/insert_node.h"
 #include "planner/logical/nodes/delete_node.h"
 
 #include "executor/operators/seq_scan_op.h"
 #include "executor/operators/filter_op.h"
 #include "executor/operators/limit_op.h"
 #include "executor/operators/projection_op.h"
+#include "executor/operators/insert_op.h"
 #include "executor/operators/delete_op.h"
 #include "executor/predicate.h"
 #include "parser/analyzer.h"
@@ -247,6 +249,29 @@ ColumnsToPositions(const logical::LogicalProject &proj) {
     return {positions.begin(), positions.end()};
 }
 
+common::Value EvaluateExprToValue(const parser::AnalyzedExpr& expr) {
+    if (auto* lit = dynamic_cast<const parser::AnalyzedLiteral*>(&expr)) {
+        if (lit->result_type == catalog::INT_TYPE)
+            return common::Value{static_cast<uint32_t>(std::stoul(lit->value))};
+        if (lit->result_type == catalog::TEXT_TYPE)
+            return common::Value{lit->value};
+    }
+    throw std::runtime_error("EvaluateExprToValue: unsupported expression");
+}
+
+std::vector<std::vector<common::Value>>
+EvaluateInsertValues(const logical::LogicalInsert& ins) {
+    std::vector<std::vector<common::Value>> rows;
+    for (const auto& analyzed_row : ins.Values()) {
+        std::vector<common::Value> row;
+        for (const auto& val_expr : analyzed_row) {
+            row.push_back(EvaluateExprToValue(*val_expr));
+        }
+        rows.push_back(std::move(row));
+    }
+    return rows;
+}
+
 // PhysicalPlanner::Build
 std::unique_ptr<executor::Operator>
 PhysicalPlanner::Build(const LogicalPlan &plan, PlanningContext &ctx) {
@@ -280,6 +305,13 @@ PhysicalPlanner::Build(const LogicalPlan &plan, PlanningContext &ctx) {
         return std::make_unique<executor::LimitOp>(
             std::move(child_op), limit.Limit()
         );
+    }
+
+    case LogicalPlanType::Insert: {
+        auto& ins = static_cast<const logical::LogicalInsert&>(plan);
+        auto table = ctx.table_mgr->OpenTable(ins.TableName());
+        auto rows = EvaluateInsertValues(ins);
+        return std::make_unique<executor::InsertOp>(table, std::move(rows));
     }
 
     case LogicalPlanType::Delete: {

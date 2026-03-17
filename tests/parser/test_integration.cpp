@@ -45,6 +45,8 @@ protected:
         planner::LogicalPlanPtr logical;
         if (stmt->type == parser::StmtType::Select)
             logical = planner::LogicalPlanner::Build(*stmt->select_query);
+        else if (stmt->type == parser::StmtType::Insert)
+            logical = planner::LogicalPlanner::Build(*stmt->insert_query);
         else if (stmt->type == parser::StmtType::Delete)
             logical = planner::LogicalPlanner::Build(*stmt->delete_query);
 
@@ -206,4 +208,60 @@ TEST_F(IntegrationTest, DeleteNoMatch) {
 
 TEST_F(IntegrationTest, DeleteUndefinedTableThrows) {
     EXPECT_THROW(run("DELETE FROM ghosts"), DbError);
+}
+
+
+// INSERT integration
+TEST_F(IntegrationTest, InsertSingleRow) {
+    auto result = run(
+        "INSERT INTO users (id, name, age) VALUES (6, 'Frank', 40)");
+    ASSERT_EQ(result.size(), 1);
+    EXPECT_EQ(std::get<uint32_t>(result[0].GetValues()[0]), 1);
+
+    auto rows = run("SELECT * FROM users WHERE id = 6");
+    ASSERT_EQ(rows.size(), 1);
+    EXPECT_EQ(std::get<uint32_t>(rows[0].GetValues()[0]), 6);
+    EXPECT_EQ(std::get<std::string>(rows[0].GetValues()[1]), "Frank");
+    EXPECT_EQ(std::get<uint32_t>(rows[0].GetValues()[2]), 40);
+}
+
+TEST_F(IntegrationTest, InsertMultiRow) {
+    auto result = run(
+        "INSERT INTO users VALUES (6, 'Frank', 40), (7, 'Grace', 33)");
+    ASSERT_EQ(result.size(), 1);
+    EXPECT_EQ(std::get<uint32_t>(result[0].GetValues()[0]), 2);
+
+    auto rows = run("SELECT * FROM users");
+    EXPECT_EQ(rows.size(), 7);
+}
+
+TEST_F(IntegrationTest, InsertWithoutColumnList) {
+    auto result = run("INSERT INTO users VALUES (10, 'Zoe', 50)");
+    ASSERT_EQ(result.size(), 1);
+    EXPECT_EQ(std::get<uint32_t>(result[0].GetValues()[0]), 1);
+
+    auto rows = run("SELECT name FROM users WHERE id = 10");
+    ASSERT_EQ(rows.size(), 1);
+    EXPECT_EQ(std::get<std::string>(rows[0].GetValues()[0]), "Zoe");
+}
+
+TEST_F(IntegrationTest, InsertTypeMismatchThrows) {
+    EXPECT_THROW(
+        run("INSERT INTO users (id, name, age) VALUES ('bad', 'X', 1)"),
+        DbError);
+}
+
+TEST_F(IntegrationTest, InsertUndefinedTableThrows) {
+    EXPECT_THROW(
+        run("INSERT INTO ghosts VALUES (1)"), DbError);
+}
+
+TEST_F(IntegrationTest, InsertThenDeleteRoundTrip) {
+    run("INSERT INTO users (id, name, age) VALUES (99, 'Temp', 18)");
+    auto before = run("SELECT * FROM users WHERE id = 99");
+    ASSERT_EQ(before.size(), 1);
+
+    run("DELETE FROM users WHERE id = 99");
+    auto after = run("SELECT * FROM users WHERE id = 99");
+    EXPECT_EQ(after.size(), 0);
 }

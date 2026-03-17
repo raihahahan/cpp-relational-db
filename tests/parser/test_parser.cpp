@@ -411,3 +411,97 @@ TEST(ParserDelete, DeleteMissingFrom) {
 TEST(ParserDelete, DeleteMissingTable) {
     EXPECT_THROW(Parser::Parse("DELETE FROM"), DbError);
 }
+
+
+// INSERT parsing
+
+static InsertStmt* parse_insert(const std::string& sql,
+                                std::unique_ptr<AstNode>& owner) {
+    owner = Parser::Parse(sql);
+    return dynamic_cast<InsertStmt*>(owner.get());
+}
+
+TEST(ParserInsert, SingleRowWithColumns) {
+    std::unique_ptr<AstNode> ast;
+    auto* stmt = parse_insert(
+        "INSERT INTO users (id, name, age) VALUES (1, 'Alice', 30)", ast);
+
+    ASSERT_NE(stmt, nullptr);
+    EXPECT_EQ(stmt->table_name, "users");
+
+    ASSERT_EQ(stmt->columns.size(), 3);
+    EXPECT_EQ(stmt->columns[0], "id");
+    EXPECT_EQ(stmt->columns[1], "name");
+    EXPECT_EQ(stmt->columns[2], "age");
+
+    ASSERT_EQ(stmt->values.size(), 1);
+    ASSERT_EQ(stmt->values[0].size(), 3);
+
+    auto* v0 = dynamic_cast<Literal*>(stmt->values[0][0].get());
+    ASSERT_NE(v0, nullptr);
+    EXPECT_EQ(v0->lit_type, Literal::LiteralType::Integer);
+    EXPECT_EQ(v0->value, "1");
+
+    auto* v1 = dynamic_cast<Literal*>(stmt->values[0][1].get());
+    ASSERT_NE(v1, nullptr);
+    EXPECT_EQ(v1->lit_type, Literal::LiteralType::String);
+    EXPECT_EQ(v1->value, "Alice");
+
+    auto* v2 = dynamic_cast<Literal*>(stmt->values[0][2].get());
+    ASSERT_NE(v2, nullptr);
+    EXPECT_EQ(v2->lit_type, Literal::LiteralType::Integer);
+    EXPECT_EQ(v2->value, "30");
+}
+
+TEST(ParserInsert, SingleRowWithoutColumns) {
+    std::unique_ptr<AstNode> ast;
+    auto* stmt = parse_insert(
+        "INSERT INTO users VALUES (1, 'Bob', 25)", ast);
+
+    ASSERT_NE(stmt, nullptr);
+    EXPECT_EQ(stmt->table_name, "users");
+    EXPECT_TRUE(stmt->columns.empty());
+    ASSERT_EQ(stmt->values.size(), 1);
+    ASSERT_EQ(stmt->values[0].size(), 3);
+}
+
+TEST(ParserInsert, MultiRow) {
+    std::unique_ptr<AstNode> ast;
+    auto* stmt = parse_insert(
+        "INSERT INTO users VALUES (1, 'A', 20), (2, 'B', 30)", ast);
+
+    ASSERT_NE(stmt, nullptr);
+    ASSERT_EQ(stmt->values.size(), 2);
+    ASSERT_EQ(stmt->values[0].size(), 3);
+    ASSERT_EQ(stmt->values[1].size(), 3);
+}
+
+TEST(ParserInsert, WithSemicolon) {
+    std::unique_ptr<AstNode> ast;
+    auto* stmt = parse_insert(
+        "INSERT INTO users VALUES (1, 'A', 20);", ast);
+
+    ASSERT_NE(stmt, nullptr);
+    EXPECT_EQ(stmt->table_name, "users");
+}
+
+TEST(ParserInsert, CaseInsensitive) {
+    std::unique_ptr<AstNode> ast;
+    auto* stmt = parse_insert(
+        "insert into users values (1, 'A', 20)", ast);
+
+    ASSERT_NE(stmt, nullptr);
+    EXPECT_EQ(stmt->table_name, "users");
+}
+
+TEST(ParserInsert, MissingValues) {
+    EXPECT_THROW(Parser::Parse("INSERT INTO users (id)"), DbError);
+}
+
+TEST(ParserInsert, MissingInto) {
+    EXPECT_THROW(Parser::Parse("INSERT users VALUES (1)"), DbError);
+}
+
+TEST(ParserInsert, MissingTableName) {
+    EXPECT_THROW(Parser::Parse("INSERT INTO VALUES (1)"), DbError);
+}

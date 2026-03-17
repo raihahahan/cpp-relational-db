@@ -3,6 +3,7 @@
 #include "planner/logical/nodes/filter.h"
 #include "planner/logical/nodes/project.h"
 #include "planner/logical/nodes/limit.h"
+#include "planner/logical/nodes/insert_node.h"
 #include "planner/logical/nodes/delete_node.h"
 
 namespace db::planner {
@@ -75,6 +76,30 @@ const std::vector<LogicalPlan *> &LogicalLimit::Children() const {
 
 size_t LogicalLimit::Limit() const { return _limit; }
 
+// LogicalInsert
+LogicalInsert::LogicalInsert(std::string table_name,
+                             std::vector<catalog::ColumnInfo> target_columns,
+                             std::vector<std::vector<std::unique_ptr<parser::AnalyzedExpr>>> values)
+    : _table_name(std::move(table_name)),
+      _target_columns(std::move(target_columns)),
+      _values(std::move(values)) {}
+
+LogicalPlanType LogicalInsert::Type() const { return LogicalPlanType::Insert; }
+
+const std::vector<LogicalPlan*>& LogicalInsert::Children() const {
+    static const std::vector<LogicalPlan*> empty;
+    return empty;
+}
+
+const std::string& LogicalInsert::TableName() const { return _table_name; }
+
+const std::vector<catalog::ColumnInfo>& LogicalInsert::TargetColumns() const {
+    return _target_columns;
+}
+
+const std::vector<std::vector<std::unique_ptr<parser::AnalyzedExpr>>>&
+LogicalInsert::Values() const { return _values; }
+
 // LogicalDelete
 LogicalDelete::LogicalDelete(LogicalPlanPtr child, std::string table_name)
     : _child(std::move(child)), _table_name(std::move(table_name)) {}
@@ -123,6 +148,23 @@ LogicalPlanPtr LogicalPlanner::Build(const parser::Query &query) {
     }
 
     return plan;
+}
+
+LogicalPlanPtr LogicalPlanner::Build(const parser::AnalyzedInsert& ins) {
+    // Clone the analyzed values since we need to move them into the node
+    std::vector<std::vector<std::unique_ptr<parser::AnalyzedExpr>>> cloned_values;
+    for (const auto& row : ins.values) {
+        std::vector<std::unique_ptr<parser::AnalyzedExpr>> cloned_row;
+        for (const auto& val : row) {
+            cloned_row.push_back(parser::clone(*val));
+        }
+        cloned_values.push_back(std::move(cloned_row));
+    }
+
+    return std::make_unique<logical::LogicalInsert>(
+        ins.table.table_name,
+        ins.target_columns,
+        std::move(cloned_values));
 }
 
 LogicalPlanPtr LogicalPlanner::Build(const parser::AnalyzedDelete& del) {

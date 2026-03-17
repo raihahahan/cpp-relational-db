@@ -105,7 +105,9 @@ int main() {
                 std::cout << "(" << results.size() << " rows)\n\n";
             } else {
                 planner::LogicalPlanPtr logical_plan;
-                if (stmt->type == parser::StmtType::Delete) {
+                if (stmt->type == parser::StmtType::Insert) {
+                    logical_plan = planner::LogicalPlanner::Build(*stmt->insert_query);
+                } else if (stmt->type == parser::StmtType::Delete) {
                     logical_plan = planner::LogicalPlanner::Build(*stmt->delete_query);
                 }
                 auto physical_plan = planner::PhysicalPlanner::Build(*logical_plan, ctx);
