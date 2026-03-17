@@ -118,7 +118,8 @@ Public interface:
 ```cpp
 class BufferManager {
 public:
-    BufferManager(std::unique_ptr<IReplacementPolicy> policy, DiskManager* dm);
+    BufferManager(ReplacementPolicyType type, IDiskManager* dm);
+    ~BufferManager();
 
     Frame* request(page_id_t pid);
     void release(page_id_t pid);
@@ -191,6 +192,10 @@ Marks the frame as dirty. The frame will be flushed on eviction or during `flush
 ### 3.4 flushAll()
 
 Writes all dirty pages to disk. Does not modify frame assignment, pin counts, or policy state.
+
+### 3.5 Destructor
+
+The destructor calls `flush_all()` to ensure all dirty pages are written to disk before the buffer manager is destroyed. This provides RAII-style persistence so that data created during a session (e.g., new tables, inserts) survives process exit.
 
 ## 4. Interaction with DiskManager
 

@@ -43,6 +43,7 @@ Purpose:
 Access:
 
 - Sequential scan via `TablesCatalog::Lookup(table_name)`
+- `DeleteByTableId(table_id)` — removes table metadata (used by DROP TABLE)
 
 ### 2. `db_attributes`
 
@@ -172,6 +173,10 @@ Catalog bootstrapping happens **once**, on an empty database.
 6. Insert catalog metadata (tables + columns)
 
 After bootstrapping, catalog tables behave exactly like user tables.
+
+## DropTable
+
+`Catalog::DropTable(table_name)` removes a table's metadata from `db_tables` and `db_attributes`, and deletes the underlying heap file. Used by the DROP TABLE SQL command.
 
 ## Guarantees Provided by the Catalog
 

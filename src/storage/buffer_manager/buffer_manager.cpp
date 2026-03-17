@@ -1,6 +1,7 @@
 #include "storage/buffer_manager/buffer_manager.h"
 #include "storage/buffer_manager/replacement_policies/clock_policy.h"
 #include "config/config.h"
+#include <iostream>
 
 namespace db::storage {
 BufferManager::BufferManager(ReplacementPolicyType type, IDiskManager* dm)
@@ -32,9 +33,10 @@ BufferManager::~BufferManager() {
     try {
         flush_all();
     } catch (const std::exception& e) {
-        throw std::runtime_error("Error in BufferManager destructor: " + std::string(e.what()));
+        std::cerr << "BufferManager destructor: failed to flush dirty pages: "
+                  << e.what() << std::endl;
     }
-};
+}
 
 Frame* BufferManager::request(page_id_t pid) {
     auto it = page_table_.find(pid);

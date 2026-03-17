@@ -1,6 +1,6 @@
 # Parser Layer Overview
 
-The parser layer transforms a raw SQL string into a validated, type-checked analyzed statement. It follows PostgreSQL's three-stage architecture: Lexer -> Parser -> Semantic Analyzer. Supported statements: SELECT, INSERT, UPDATE, and DELETE.
+The parser layer transforms a raw SQL string into a validated, type-checked analyzed statement. It follows PostgreSQL's three-stage architecture: Lexer -> Parser -> Semantic Analyzer. Supported statements: SELECT, INSERT, UPDATE, DELETE, CREATE TABLE, and DROP TABLE.
 
 The `/parser` folder contains the following components:
 
@@ -91,6 +91,8 @@ The AST is defined in `parser/ast.h`. All nodes inherit from `AstNode`. Expressi
 | `InsertStmt` | `INSERT INTO table [cols] VALUES (...),...`           |
 | `SetClause`  | Single `col = expr` pair used in UPDATE              |
 | `UpdateStmt` | `UPDATE table SET ... [WHERE ...]`                   |
+| `CreateTableStmt` | `CREATE TABLE name (col1 TYPE, col2 TYPE, ...)` |
+| `DropTableStmt`   | `DROP TABLE [IF EXISTS] name`                   |
 
 `SelectTarget` is a `std::variant<StarTarget, ResTarget>`, allowing `SELECT *` and `SELECT col` to coexist in the same target list type.
 
@@ -100,7 +102,7 @@ The AST captures **syntax only**. A `ColumnRef` with `name = "age"` has no idea 
 
 ## 4. Parser
 
-The `Parser` is a **recursive descent parser** that consumes tokens from the Lexer and produces an AST node (`SelectStmt`, `InsertStmt`, `UpdateStmt`, or `DeleteStmt`).
+The `Parser` is a **recursive descent parser** that consumes tokens from the Lexer and produces an AST node (`SelectStmt`, `InsertStmt`, `UpdateStmt`, `DeleteStmt`, `CreateTableStmt`, or `DropTableStmt`).
 
 ### Entry Point
 
@@ -115,6 +117,11 @@ The parser inspects the first keyword to decide which statement type to parse.
 
 ```
 statement    ::= select_stmt | insert_stmt | update_stmt | delete_stmt
+                  | create_table_stmt | drop_table_stmt
+
+create_table_stmt ::= CREATE TABLE identifier '(' column_def (',' column_def)* ')' [;]
+column_def        ::= identifier type_name
+drop_table_stmt   ::= DROP TABLE [IF EXISTS] identifier [;]
 
 select_stmt  ::= SELECT target_list FROM table_name
                   [WHERE expr] [LIMIT number] [;]
@@ -196,6 +203,8 @@ The `Analyze()` method dispatches based on the concrete AST type (`SelectStmt`, 
 | `insert_query`  | `unique_ptr<AnalyzedInsert>`    | `StmtType::Insert`     |
 | `update_query`  | `unique_ptr<AnalyzedUpdate>`    | `StmtType::Update`     |
 | `delete_query`  | `unique_ptr<AnalyzedDelete>`    | `StmtType::Delete`     |
+| `create_table`  | `unique_ptr<AnalyzedCreateTable>` | `StmtType::CreateTable` |
+| `drop_table`    | `unique_ptr<AnalyzedDropTable>`   | `StmtType::DropTable`   |
 
 ### Per-Statement Analysis
 
@@ -282,6 +291,8 @@ The `AnalyzedStmt` output of the Analyzer feeds into the appropriate `LogicalPla
 - **DELETE**: `Build(const AnalyzedDelete&)` produces Scan -> Filter -> Delete
 
 The `AnalyzedExpr` tree in WHERE clauses is cloned (via `parser::clone()`) into `LogicalFilter` nodes, then compiled into a runtime predicate by the physical planner's `CompilePredicate()`. DML operators (`InsertOp`, `UpdateOp`, `DeleteOp`) return a single "count tuple" with the number of affected rows.
+
+DDL statements (CREATE TABLE, DROP TABLE) bypass the planner and are executed directly via `ExecuteCreateTable` and `ExecuteDropTable` in the utility executor.
 
 ## Testing Instructions
 

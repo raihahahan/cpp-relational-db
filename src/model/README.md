@@ -97,6 +97,7 @@ The `TableManager` acts as a factory and cache for tables. It ensures that only 
 | Method                | Description                                                                                                                               |
 | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | **`OpenTable(name)`** | Looks up a table by name. If not in cache, it loads metadata from the catalogs, opens the `HeapFile`, and instantiates a new `UserTable`. |
+| **`EvictTable(name)`** | Removes a table from the cache. Used when dropping a table to invalidate cached references. |
 
 ## Testing Instructions
 

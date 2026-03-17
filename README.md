@@ -20,7 +20,7 @@ This database system is built as a layered architecture, where each layer abstra
 3. Catalog Layer: Creates and provides metadata information for the database (i.e info about tables, attributes, types) (done)
 4. Model Layer: Schema aware layer to create and insert rows into user tables in the database (done)
 5. Executor Layer: Physical operators (scan, filter, project, limit) using the Volcano iterator model (done)
-6. Parser Layer: Lexer, recursive descent parser, and semantic analyzer - SQL string to validated query (done, supports SELECT, INSERT, UPDATE, DELETE)
+6. Parser Layer: Lexer, recursive descent parser, and semantic analyzer - SQL string to validated query (done, supports SELECT, INSERT, UPDATE, DELETE, CREATE TABLE, DROP TABLE)
 7. Planner Layer: Logical and physical planners — converts analyzed queries into executable operator trees (done)
 8. Concurrency Control
 9. Recoverability Manager
@@ -243,14 +243,14 @@ The **parser layer** transforms a raw SQL string into a fully validated and type
 | ---------------- | ----------------------------------------------------------------------------------------- |
 | **Lexer**        | Tokenises SQL input into keywords, identifiers, literals, operators, and punctuation.     |
 | **Parser**       | Recursive descent parser that builds a raw AST from the token stream.                     |
-| **Analyzer**     | Resolves table/column names against the Catalog, checks types, and expands wildcards.     |
+| **Analyzer**     | Resolves table/column names against the Catalog, checks types, expands wildcards, and validates DDL.     |
 | **AST**          | Intermediate parse tree with unresolved names (`ColumnRef`, `Literal`, `BinaryExpr`).     |
 | **AnalyzedStmt** | Final output of analysis, fully resolved with `TableInfo`, `ColumnInfo`, and types.       |
 
 ### Responsibilities
 
 - **Lexical Analysis**: Recognises 40 SQL keywords (case-insensitive), string literals with `''` escaping, two-character operators (`<=`, `>=`, `!=`, `<>`), and dot-qualified identifiers.
-- **Syntactic Analysis**: Parses SELECT, INSERT, UPDATE, and DELETE statements. Implements operator precedence via precedence climbing.
+- **Syntactic Analysis**: Parses SELECT, INSERT, UPDATE, DELETE, CREATE TABLE, and DROP TABLE statements. Implements operator precedence via precedence climbing.
 - **Semantic Analysis**: Validates table and column references against the Catalog, enforces type compatibility rules for comparisons and arithmetic, and expands `SELECT *` into individual columns.
 - **Error Reporting**: Produces positioned error messages with codes (`SyntaxError`, `ParseError`, `UndefinedTable`, `UndefinedColumn`, `TypeMismatch`).
 
@@ -296,7 +296,7 @@ The **planner layer** converts an `AnalyzedStmt` into an executable operator tre
 | 6     | **Parser**      | Done   | Lexer, recursive descent parser, and semantic analyzer.                    |
 | 7     | **Planner**     | Done   | Logical and physical planners bridging parser to executor.                 |
 | 8     | **DML**         | Done   | INSERT, UPDATE, DELETE support across parser, planner, and executor.       |
-| 9     | **DDL**         |        | CREATE TABLE, DROP TABLE.                                                  |
+| 9     | **DDL**         | Done   | CREATE TABLE, DROP TABLE.                                                  |
 | 10    | **Concurrency** |        | Locking, transaction management, and isolation.                            |
 | 11    | **Recovery**    |        | Write-ahead logging and crash recovery.                                    |
 | 12    | **Networking**  |        | Client-server interface for remote connections.                            |
